@@ -1,9 +1,11 @@
 # FarmSentry — Project Specification
-*(working title — rename freely)*
+
+_(working title — rename freely)_
 
 **One-liner:** AI-powered crop disease triage for NZ growers — autonomous drone scans flag problems on a map, an AI suggests diagnosis + treatment, the farmer approves/edits, and it becomes a to-do list.
 
 **The differentiation line (say this if anyone mentions Taranis):**
+
 > "Taranis is real, but it's built for a different farm — high-volume commodity row crops across thousands of acres in the US, Canada, Brazil, Argentina, Russia, Ukraine and Australia, priced at $5–20/acre/season with local offices and contracted agronomists. New Zealand isn't in their footprint and our crops aren't in their model. We're building for kiwifruit, apples, wine grapes, pasture — small, high-value blocks — not the corn belt."
 
 ---
@@ -11,6 +13,7 @@
 ## 1. Scope
 
 ### Building tonight (MVP)
+
 - Simulated drone feed: fake GPS-tagged "scan events" with sample images, on a manual trigger
 - AI diagnosis: image → condition + confidence + suggested treatment (vision-capable model, not a trained-from-scratch CV model)
 - Map + ticket list showing every flagged issue
@@ -19,6 +22,7 @@
 - Basic insights view: counts by status, by crop, by issue type
 
 ### Explicitly OUT of scope tonight (say this proactively, don't wait to be asked)
+
 - **Real drone hardware or flight.** Simulated only.
 - **Autonomous treatment application.** NZ CAA Part 102 requires a supervising human observer for any agrichemical drone flight regardless of "autonomy" — roadmap slide, never a live claim.
 - **Live/online model learning from farmer corrections.** Frame as "logged for the next training run," not "learns in real time."
@@ -35,6 +39,7 @@
 - **Hosting:** Vercel — connect the repo in the first 30 minutes so there's always a working deployed URL as a safety net
 
 **Scaffold commands (run once, together, before splitting up):**
+
 ```bash
 npx create-next-app@latest farmsentry --typescript --tailwind --app --eslint
 cd farmsentry
@@ -43,6 +48,7 @@ npm install -D @types/leaflet
 ```
 
 **.env.local:**
+
 ```
 ANTHROPIC_API_KEY=your_key_here
 # swap for OPENAI_API_KEY if using GPT-4V instead — Track A's choice, document whichever is used
@@ -85,7 +91,7 @@ type CropType = "grape" | "apple";
 
 interface DroneEvent {
   id: string;
-  timestamp: string;       // ISO 8601
+  timestamp: string; // ISO 8601
   lat: number;
   lng: number;
   imageUrl: string;
@@ -93,8 +99,8 @@ interface DroneEvent {
 }
 
 interface Diagnosis {
-  condition: string;        // e.g. "Grape Black Rot" or "Healthy"
-  confidence: number;       // 0-1
+  condition: string; // e.g. "Grape Black Rot" or "Healthy"
+  confidence: number; // 0-1
   suggestedTreatment: string;
 }
 
@@ -147,7 +153,7 @@ General horticultural guidance for demo purposes — in the pitch, frame this as
 | Apple Scab | Olive-green to black velvety spots on leaves/fruit, fruit russeting | Rake and destroy fallen leaves, protectant fungicide from green tip through early summer, resistant cultivars long-term |
 | Black Rot (Frogeye Leaf Spot) | Purple-bordered "frogeye" leaf spots, fruit rot with concentric rings, branch cankers | Prune out cankers and dead wood, remove mummified fruit, protectant fungicide |
 | Cedar Apple Rust | Bright orange-yellow leaf spots (needs a nearby juniper/cedar host) | Remove nearby host junipers if feasible, protectant fungicide in spring, resistant cultivars long-term |
-| Healthy | No visible symptoms | No action — log for insights baseline |
+| Healthy | No visible symptoms | No action — log for insightss baseline |
 
 ---
 
@@ -166,10 +172,12 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 | `--alert-600` | `#A6402F` | "Disease flagged/urgent" status — a muted brick-red, not a stock UI red |
 
 **Type**
+
 - Display + body: **IBM Plex Sans** (SemiBold for headers, Regular for body) — technical but warm, not the generic Inter-only default
 - Data/utility: **IBM Plex Mono** — for GPS coordinates, confidence scores, ticket IDs, timestamps. This isn't decorative: it's functionally justified by the content (a drone telemetry feed genuinely reads like monospaced instrument data), and it ties the UI's voice to what it's actually showing.
 
 **Layout**
+
 - Top bar: small wordmark styled like a system readout, e.g. `FARMSENTRY // RENWICK-01` in Plex Mono, plus live pill counts for new/approved/completed
 - Main view: full-bleed map, pins colored by status (`veraison` = new, `canopy` = approved/completed, `alert` = flagged urgent). Persistent "Trigger Scan" button, bottom-right, styled like a physical instrument button, not a generic rounded CTA
 - Ticket detail: a **side panel that slides in from the right**, not a modal — keep the map visible behind it so the pin and its ticket stay spatially connected. This is a small, deliberate choice: most CRUD hackathon apps default to a blocking modal, and it costs nothing extra to do the panel instead
@@ -185,6 +193,7 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 **Goal:** one function. `diagnose(imageUrl: string, cropType: CropType): Promise<Diagnosis>`
 
 **Tasks:**
+
 1. Pull ~15–20 sample images per crop from PlantVillage (grape: black rot, esca, leaf blight, healthy; apple: scab, black rot, cedar apple rust, healthy). Drop into `/data/sample-images`.
 2. Write `diagnose()` in `/lib/diagnosis`. Call a vision-capable model with the image, asking for condition + confidence + a treatment pointer, returned as strict JSON. Cross-reference against Section 6's content library for the treatment text rather than trusting the model's free-form suggestion — more consistent, and matches what's in `treatments.json`.
 3. Pre-compute and cache the diagnosis result for every image that will actually appear in the live demo sequence (see Section 11 — this is your contribution to demo resilience).
@@ -200,6 +209,7 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 **Goal:** everything the farmer (and the judges) actually see and click. Build against Section 7's design system.
 
 **Tasks:**
+
 1. **Map view** — Leaflet + OSM tiles, pins colored per Section 7. Clicking a pin opens the side panel (not a modal).
 2. **Drone animation** — icon moving along the Section-13 waypoint path, manual "Trigger Scan" button that fires the next event and animates the ping (Section 7's signature moment). Build the manual trigger first — never depend on an automatic timer during a live demo.
 3. **Ticket side panel** — image, AI diagnosis, confidence, suggested treatment, Approve / Edit / Reject. Rejected/edited tickets let the farmer type a correction.
@@ -216,6 +226,7 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 **Goal:** the plumbing that connects A and B.
 
 **Tasks:**
+
 1. **Drone simulator** (`/lib/droneSimulator`) — see Section 13 for the exact waypoint array. `getNextEvent()` cycles through waypoints and sample images, weighted ~40% disease / 60% healthy.
 2. **API routes:**
    - `POST /api/drone/trigger` — pulls the next `DroneEvent`, calls Track A's `diagnose()`, creates a `Ticket`, stores it, returns it
@@ -240,12 +251,12 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 
 ## 12. Integration Timeline
 
-| Checkpoint | What happens |
-|---|---|
-| Now | All three confirm `types.ts`, no debate after this point |
-| Early | Build independently against the contract, mock data where needed |
-| Mid | First integration check — wire real endpoints together, fix mismatches |
-| Late | Feature complete, seed data in, insights working, cached fallbacks in place |
+| Checkpoint    | What happens                                                                          |
+| ------------- | ------------------------------------------------------------------------------------- |
+| Now           | All three confirm `types.ts`, no debate after this point                              |
+| Early         | Build independently against the contract, mock data where needed                      |
+| Mid           | First integration check — wire real endpoints together, fix mismatches                |
+| Late          | Feature complete, seed data in, insights working, cached fallbacks in place           |
 | Final stretch | Rehearse the demo click-path 2–3 times, not more — polish stops paying off after that |
 
 ---
@@ -257,18 +268,18 @@ Real coordinates, the centre of NZ's Sauvignon Blanc growing region.
 ```ts
 // Demo flight path — Renwick, Marlborough (heart of NZ's grape-growing region)
 export const DEMO_WAYPOINTS: { lat: number; lng: number }[] = [
-  { lat: -41.5070, lng: 173.8260 },
-  { lat: -41.5070, lng: 173.8300 },
-  { lat: -41.5070, lng: 173.8340 },
-  { lat: -41.5095, lng: 173.8340 },
-  { lat: -41.5095, lng: 173.8300 },
-  { lat: -41.5095, lng: 173.8260 },
-  { lat: -41.5120, lng: 173.8260 },
-  { lat: -41.5120, lng: 173.8300 },
-  { lat: -41.5120, lng: 173.8340 },
+  { lat: -41.507, lng: 173.826 },
+  { lat: -41.507, lng: 173.83 },
+  { lat: -41.507, lng: 173.834 },
+  { lat: -41.5095, lng: 173.834 },
+  { lat: -41.5095, lng: 173.83 },
+  { lat: -41.5095, lng: 173.826 },
+  { lat: -41.512, lng: 173.826 },
+  { lat: -41.512, lng: 173.83 },
+  { lat: -41.512, lng: 173.834 },
 ];
 
-export const DEMO_FARM_CENTER = { lat: -41.5095, lng: 173.8300 };
+export const DEMO_FARM_CENTER = { lat: -41.5095, lng: 173.83 };
 ```
 
 ---
