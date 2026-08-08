@@ -40,6 +40,10 @@ curl -X PATCH localhost:3000/api/tickets/tkt-0001 \
 
 All three return exactly the shapes in `lib/types.ts`.
 
+## Dev quirk worth knowing
+
+Editing `app/(dashboard)/map/page.tsx` or `components/MapView.tsx` can throw `Cannot read properties of undefined (reading 'appendChild')` on Fast Refresh. That's a known react-leaflet + HMR issue — the map remounts into a stale container. **Hard-reload the page and it's gone.** It does not happen on a cold load, and it will not happen in the demo.
+
 ## Lanes — one person each, no dependencies between them
 
 | Lane | Owns | Job |

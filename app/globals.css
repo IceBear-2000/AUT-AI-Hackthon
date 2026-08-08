@@ -55,3 +55,79 @@ body {
   color: var(--color-canopy-900) !important;
   border-color: rgba(28, 46, 34, 0.15) !important;
 }
+
+/* --- Lane X: map markers. Colour arrives as --pin on the inline style. --- */
+
+.farm-pin {
+  background: none;
+  border: none;
+}
+
+.farm-pin-dot {
+  position: absolute;
+  inset: 5px;
+  border-radius: 9999px;
+  background: var(--pin);
+  box-shadow:
+    0 0 0 2px rgba(237, 240, 234, 0.95),
+    0 1px 4px rgba(28, 46, 34, 0.45);
+  transition: inset 120ms ease;
+}
+
+.farm-pin-dot[data-selected="true"] {
+  inset: 2px;
+  box-shadow:
+    0 0 0 3px var(--color-mist-50),
+    0 0 0 5px var(--pin),
+    0 1px 4px rgba(28, 46, 34, 0.45);
+}
+
+.farm-pin-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--pin);
+}
+
+/* Leaflet positions markers with transform, so transitioning transform
+   animates the drone between waypoints for free. */
+.drone-marker {
+  transition: transform 1100ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drone-body {
+  position: absolute;
+  inset: 10px;
+  border-radius: 2px;
+  background: var(--color-canopy-900);
+  box-shadow: 0 0 0 2px var(--color-mist-50);
+}
+
+/* Dropline from the hovering drone down to the block it's scanning. */
+.drone-tether {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-canopy-700),
+    rgba(45, 79, 54, 0)
+  );
+}
+
+.drone-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1.5px dashed var(--color-canopy-700);
+  opacity: 0.75;
+  animation: drone-spin 6s linear infinite;
+}
+
+@keyframes drone-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
