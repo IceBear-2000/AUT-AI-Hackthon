@@ -38,7 +38,7 @@ type Mode = "idle" | "edit" | "reject";
 type Assignee = "farmer" | "drone";
 
 const FIELD_LABEL =
-  "font-mono text-[10px] uppercase tracking-[0.18em] text-canopy-900/45";
+  "font-mono text-[10px] uppercase tracking-[0.18em] text-tertiary";
 
 export default function TicketPanel({
   ticket,
@@ -143,15 +143,29 @@ export default function TicketPanel({
       aria-label={`Ticket ${shown.id}`}
       aria-hidden={!open}
       className={[
-        "fixed inset-y-0 right-0 z-[1200] flex w-full max-w-[27rem] flex-col",
-        "border-l border-canopy-900/12 bg-mist-50 shadow-[-18px_0_44px_-28px_rgba(28,46,34,0.55)]",
+        // Phone: a bottom sheet rising to 88% of the viewport, which is where a
+        // thumb expects it. Tablet and up: the side panel Section 7 asks for,
+        // so the pin stays visible beside its ticket.
+        "fixed z-[1200] flex flex-col bg-raised",
+        "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-sheet border-t border-hairline",
+        "shadow-[0_-16px_48px_-16px_rgba(0,0,0,0.35)]",
+        "sm:inset-y-0 sm:left-auto sm:right-0 sm:max-h-none sm:w-full sm:max-w-[27rem]",
+        "sm:rounded-none sm:border-l sm:border-t-0",
+        "sm:shadow-[-18px_0_44px_-28px_rgba(0,0,0,0.45)]",
         "transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-        open ? "translate-x-0" : "pointer-events-none translate-x-full",
+        open
+          ? "translate-y-0 sm:translate-x-0"
+          : "pointer-events-none translate-y-full sm:translate-x-full sm:translate-y-0",
       ].join(" ")}
     >
+      {/* Grab handle — signals "this is a sheet you can dismiss". Phone only. */}
+      <div className="flex justify-center pt-2.5 sm:hidden">
+        <span className="h-1 w-9 rounded-full bg-hairline-strong" />
+      </div>
+
       {/* Header — ticket ID in Plex Mono, Section 7 */}
-      <header className="flex items-center gap-3 border-b border-canopy-900/10 px-5 py-3.5">
-        <span className="font-mono text-xs tracking-[0.14em] text-canopy-900/70">
+      <header className="flex items-center gap-3 border-b border-hairline px-5 py-3.5">
+        <span className="font-mono text-xs tracking-[0.14em] text-secondary">
           {shown.id.toUpperCase()}
         </span>
         <span
@@ -164,7 +178,7 @@ export default function TicketPanel({
           type="button"
           onClick={onClose}
           aria-label="Close ticket panel"
-          className="ml-auto grid h-8 w-8 place-items-center rounded-[3px] text-canopy-900/50 transition-colors hover:bg-canopy-900/6 hover:text-canopy-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-canopy-600"
+          className="ml-auto grid h-8 w-8 place-items-center rounded-[3px] text-secondary transition-colors hover:bg-sunken hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
             <path
@@ -179,8 +193,8 @@ export default function TicketPanel({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Scan frame + telemetry caption */}
-        <figure className="border-b border-canopy-900/10">
-          <div className="relative aspect-[4/3] w-full bg-mist-100">
+        <figure className="border-b border-hairline">
+          <div className="relative aspect-[4/3] w-full bg-sunken">
             {/* unoptimized: the demo images are SVG placeholders today and real
                 PlantVillage rasters after Lane Z's swap — this works for both. */}
             <Image
@@ -195,7 +209,7 @@ export default function TicketPanel({
               className="object-cover"
             />
           </div>
-          <figcaption className="flex items-center justify-between gap-3 px-5 py-2 font-mono text-[11px] text-canopy-900/55">
+          <figcaption className="flex items-center justify-between gap-3 px-5 py-2 font-mono text-[11px] text-secondary">
             <span>{formatCoords(shown.lat, shown.lng)}</span>
             <span>
               {formatClock(shown.createdAt)} · {formatRelative(shown.createdAt)}
@@ -211,7 +225,7 @@ export default function TicketPanel({
             </p>
             <h2
               className={`mt-1.5 text-[1.4rem] leading-tight font-semibold ${
-                healthy ? "text-canopy-600" : accent.text
+                healthy ? "text-accent" : accent.text
               }`}
             >
               {shown.diagnosis.condition}
@@ -220,13 +234,13 @@ export default function TicketPanel({
             <div className="mt-4">
               <div className="flex items-baseline justify-between">
                 <span className={FIELD_LABEL}>Confidence</span>
-                <span className="font-mono text-sm text-canopy-900">
+                <span className="font-mono text-sm text-primary">
                   {formatConfidence(shown.diagnosis.confidence)}
                 </span>
               </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-canopy-900/10">
+              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-sunken">
                 <div
-                  className={`h-full rounded-full ${healthy ? "bg-canopy-600" : accent.bar}`}
+                  className={`h-full rounded-full ${healthy ? "bg-accent" : accent.bar}`}
                   style={{
                     width: `${Math.round(shown.diagnosis.confidence * 100)}%`,
                   }}
@@ -238,7 +252,7 @@ export default function TicketPanel({
           {treatment && (
             <section>
               <p className={FIELD_LABEL}>Typical symptoms</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-canopy-900/75">
+              <p className="mt-1.5 text-sm leading-relaxed text-secondary">
                 {treatment.symptoms}
               </p>
             </section>
@@ -248,13 +262,13 @@ export default function TicketPanel({
           <section>
             <p className={FIELD_LABEL}>Suggested treatment</p>
             <div
-              className={`mt-1.5 border-l-2 bg-canopy-900/[0.03] px-4 py-3 ${accent.rule}`}
+              className={`mt-1.5 border-l-2 bg-sunken[0.03] px-4 py-3 ${accent.rule}`}
             >
-              <p className="text-sm leading-relaxed text-canopy-900">
+              <p className="text-sm leading-relaxed text-primary">
                 {shown.diagnosis.suggestedTreatment}
               </p>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-canopy-900/50">
+            <p className="mt-2 text-[11px] leading-relaxed text-secondary">
               Triage guidance for a grower to verify — not a registered chemical
               prescription.
             </p>
@@ -263,7 +277,7 @@ export default function TicketPanel({
           {shown.farmerNotes && (
             <section>
               <p className={FIELD_LABEL}>Farmer notes</p>
-              <p className="mt-1.5 border-l-2 border-soil-500/40 bg-soil-500/[0.05] px-4 py-3 text-sm leading-relaxed text-canopy-900">
+              <p className="mt-1.5 border-l-2 border-status-muted/40 bg-status-muted/[0.05] px-4 py-3 text-sm leading-relaxed text-primary">
                 {shown.farmerNotes}
               </p>
             </section>
@@ -272,13 +286,13 @@ export default function TicketPanel({
       </div>
 
       {/* Action bar */}
-      <footer className="border-t border-canopy-900/10 bg-mist-50 px-5 py-4">
+      <footer className="border-t border-hairline bg-raised px-5 py-4">
         {confirmed && <ConfirmationStrip status={confirmed} healthy={healthy} />}
 
         {error && (
           <p
             role="alert"
-            className="mb-3 border-l-2 border-alert-600 bg-alert-600/[0.06] px-3 py-2 font-mono text-[11px] text-alert-600"
+            className="mb-3 border-l-2 border-status-alert bg-status-alert/10 px-3 py-2 font-mono text-[11px] text-status-alert"
           >
             {error}
           </p>
@@ -300,7 +314,7 @@ export default function TicketPanel({
                     assignedTo: healthy ? null : assignee,
                   })
                 }
-                className="flex-1 rounded-[3px] bg-canopy-600 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-mist-50 transition-colors hover:bg-canopy-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-canopy-900 disabled:opacity-55"
+                className="flex-1 rounded-[3px] bg-accent px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-on-accent transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-55"
               >
                 {pending === "approve"
                   ? "Saving…"
@@ -317,7 +331,7 @@ export default function TicketPanel({
                   setNotes(shown.farmerNotes ?? "");
                   setMode("edit");
                 }}
-                className="rounded-[3px] border border-canopy-900/20 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-canopy-900 transition-colors hover:border-canopy-900/40 hover:bg-canopy-900/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-canopy-600 disabled:opacity-55"
+                className="rounded-[3px] border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-primary transition-colors hover:border-hairline hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-55"
               >
                 Edit
               </button>
@@ -328,7 +342,7 @@ export default function TicketPanel({
                   setNotes("");
                   setMode("reject");
                 }}
-                className="rounded-[3px] border border-alert-600/35 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-alert-600 transition-colors hover:border-alert-600/60 hover:bg-alert-600/6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-alert-600 disabled:opacity-55"
+                className="rounded-[3px] border border-status-alert/35 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-status-alert transition-colors hover:border-status-alert/60 hover:bg-status-alert/6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-alert disabled:opacity-55"
               >
                 Reject
               </button>
@@ -383,15 +397,15 @@ function AssigneeToggle({
       <div className="flex items-center justify-between">
         <span className={FIELD_LABEL}>Assign to</span>
       </div>
-      <div className="mt-1.5 flex gap-1 rounded-[3px] border border-canopy-900/15 bg-canopy-900/[0.03] p-1">
+      <div className="mt-1.5 flex gap-1 rounded-[3px] border border-hairline bg-sunken[0.03] p-1">
         <button
           type="button"
           onClick={() => onChange("farmer")}
           aria-pressed={value === "farmer"}
           className={`${option} ${
             value === "farmer"
-              ? "bg-canopy-600 text-mist-50"
-              : "text-canopy-900/60 hover:text-canopy-900"
+              ? "bg-accent text-on-accent"
+              : "text-secondary hover:text-primary"
           }`}
         >
           Me
@@ -402,16 +416,16 @@ function AssigneeToggle({
           aria-pressed={value === "drone"}
           className={`${option} flex items-center justify-center gap-1.5 ${
             value === "drone"
-              ? "bg-soil-500 text-mist-50"
-              : "text-canopy-900/60 hover:text-canopy-900"
+              ? "bg-status-muted text-on-accent"
+              : "text-secondary hover:text-primary"
           }`}
         >
           Drone
           <span
             className={`rounded-[2px] px-1 py-px text-[9px] tracking-[0.1em] ${
               value === "drone"
-                ? "bg-mist-50/25 text-mist-50"
-                : "bg-soil-500/15 text-soil-500"
+                ? "bg-white/25 text-on-accent"
+                : "bg-status-muted/15 text-status-muted"
             }`}
           >
             Roadmap
@@ -419,7 +433,7 @@ function AssigneeToggle({
         </button>
       </div>
       {value === "drone" && (
-        <p className="mt-2 text-[11px] leading-relaxed text-canopy-900/55">
+        <p className="mt-2 text-[11px] leading-relaxed text-secondary">
           Queued only. CAA Part 102 requires a supervising observer for any
           agrichemical flight — we automate the scheduling and detection, not the
           legal oversight.
@@ -463,9 +477,9 @@ function NotesForm({
             ? "It's leafroll virus, not black rot — treat block 4 first."
             : "Already sprayed last week."
         }
-        className="mt-1.5 w-full resize-none rounded-[3px] border border-canopy-900/20 bg-mist-50 px-3 py-2 text-sm leading-relaxed text-canopy-900 placeholder:text-canopy-900/35 focus:border-canopy-600 focus:outline-none"
+        className="mt-1.5 w-full resize-none rounded-[3px] border border-hairline bg-raised px-3 py-2 text-sm leading-relaxed text-primary placeholder:text-tertiary focus:border-accent focus:outline-none"
       />
-      <p className="mt-1.5 text-[11px] text-canopy-900/45">
+      <p className="mt-1.5 text-[11px] text-tertiary">
         Logged for the next training run — the model does not learn in real time.
       </p>
       <div className="mt-3 flex gap-2">
@@ -473,10 +487,10 @@ function NotesForm({
           type="button"
           disabled={busy || notes.trim().length === 0}
           onClick={onSubmit}
-          className={`flex-1 rounded-[3px] px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-mist-50 transition-colors disabled:opacity-45 ${
+          className={`flex-1 rounded-[3px] px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-on-accent transition-colors disabled:opacity-45 ${
             editing
-              ? "bg-soil-500 hover:bg-soil-500/85"
-              : "bg-alert-600 hover:bg-alert-600/85"
+              ? "bg-status-muted hover:bg-status-muted/85"
+              : "bg-status-alert hover:bg-status-alert/85"
           }`}
         >
           {busy ? "Saving…" : editing ? "Save correction" : "Confirm reject"}
@@ -485,7 +499,7 @@ function NotesForm({
           type="button"
           disabled={busy}
           onClick={onCancel}
-          className="rounded-[3px] border border-canopy-900/20 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-canopy-900/70 transition-colors hover:bg-canopy-900/5 disabled:opacity-55"
+          className="rounded-[3px] border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-secondary transition-colors hover:bg-sunken disabled:opacity-55"
         >
           Cancel
         </button>
@@ -519,15 +533,15 @@ function ConfirmationStrip({
     <div
       className={`mb-3 flex items-center gap-2 border-l-2 px-3 py-2 text-[12px] ${
         dismissed
-          ? "border-canopy-900/25 bg-canopy-900/[0.04] text-canopy-900/65"
-          : "border-canopy-600 bg-canopy-600/[0.07] text-canopy-700"
+          ? "border-hairline bg-sunken[0.04] text-secondary"
+          : "border-accent bg-accent/[0.07] text-secondary"
       }`}
     >
       <span className="flex-1">{message}</span>
       {!dismissed && !healthy && (
         <a
           href="/todo"
-          className="font-mono text-[10px] uppercase tracking-[0.14em] underline underline-offset-2 hover:text-canopy-900"
+          className="font-mono text-[10px] uppercase tracking-[0.14em] underline underline-offset-2 hover:text-primary"
         >
           To-do
         </a>

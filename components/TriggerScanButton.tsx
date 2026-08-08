@@ -1,7 +1,11 @@
-// LANE X — Spec Section 7: "styled like a physical instrument button, not a
-// generic rounded CTA". Manual trigger only, never a timer during a live demo.
-
 "use client";
+
+// The one action on the map. Manual only — never a timer during a live demo.
+//
+// Section 7 asked for "a physical instrument button"; that read as brutalist
+// next to the rest of the refreshed UI, so it's now a solid accent FAB with a
+// tactile press. Still unmistakably the primary control, and on a phone it's a
+// full-width target sitting just above the tab bar.
 
 export default function TriggerScanButton({
   onClick,
@@ -15,12 +19,35 @@ export default function TriggerScanButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="group flex items-center gap-3 border-2 border-canopy-900 bg-mist-50 px-5 py-3 font-mono text-xs tracking-widest text-canopy-900 shadow-[3px_3px_0_0_var(--color-canopy-900)] transition-all active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:cursor-wait disabled:opacity-70"
+      aria-busy={busy}
+      className="focus-ring flex w-full items-center justify-center gap-2.5 rounded-pill bg-accent px-6 py-3.5 text-[15px] font-semibold text-on-accent shadow-[var(--shadow-lg)] transition-[transform,opacity] duration-150 active:scale-[0.97] disabled:cursor-wait disabled:opacity-80 sm:w-auto sm:py-3"
     >
-      <span
-        className={`size-2.5 rounded-full ${busy ? "animate-pulse bg-veraison-500" : "bg-alert-600"}`}
-      />
-      {busy ? "SCANNING…" : "TRIGGER SCAN"}
+      <span className="relative grid size-4 place-items-center">
+        <svg viewBox="0 0 20 20" className="size-4" aria-hidden="true">
+          <circle
+            cx="10"
+            cy="10"
+            r="7.2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            opacity="0.55"
+          />
+          <circle
+            cx="10"
+            cy="10"
+            r="3.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="10" cy="10" r="1.4" fill="currentColor" />
+        </svg>
+        {busy && (
+          <span className="absolute inset-0 animate-ping rounded-full border border-white/70" />
+        )}
+      </span>
+      {busy ? "Scanning…" : "Trigger scan"}
     </button>
   );
 }

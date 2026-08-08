@@ -1,36 +1,12 @@
-// LANE Z — Spec Section 10 task 5, built to Section 7.
-// Stat cards with Plex Mono numerals plus one bar chart. Deliberately not
-// overbuilt: no chart library, no date filters, no drill-downs.
+// Insights — Spec Section 10 task 5.
+// Stat cards plus one chart, counts by status / crop / condition. Reads the
+// shared ticket store, so marking something complete on /todo is reflected the
+// moment you land here. Deliberately not overbuilt.
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import treatments from "@/lib/treatments.json";
+import { useTicketStore } from "@/components/TicketsProvider";
+import { SEVERITY_ACCENT, isActionable, severityFor } from "@/components/ticketMeta";
 import type { CropType, Ticket, TicketStatus } from "@/lib/types";
-
-type TreatmentEntry = { symptoms: string; response: string; severity: string };
-const library = treatments as Record<CropType, Record<string, TreatmentEntry>>;
-
-/**
- * Tickets carry the display label ("Grape Black Rot"); treatments.json is keyed
- * by the bare condition ("Black Rot"). Match within the ticket's own crop and
- * take the longest hit, so apple's "Black Rot (Frogeye Leaf Spot)" never loses
- * to the shorter grape "Black Rot".
- *
- * Note this deliberately does not import from lib/diagnosis — that module pulls
- * in node:fs and the Anthropic SDK, which must not reach a client bundle.
- */
-function severityOf(cropType: CropType, condition: string): string {
-  const key = Object.keys(library[cropType])
-    .filter((k) => condition.includes(k))
-    .sort((a, b) => b.length - a.length)[0];
-  return key ? library[cropType][key].severity : "none";
-}
-
-const SEVERITY_COLOR: Record<string, string> = {
-  high: "bg-alert-600",
-  medium: "bg-veraison-500",
-  none: "bg-canopy-600",
-};
 
 const STATUS_ORDER: TicketStatus[] = [
   "new",
@@ -40,12 +16,20 @@ const STATUS_ORDER: TicketStatus[] = [
   "rejected",
 ];
 
-const STATUS_COLOR: Record<TicketStatus, string> = {
-  new: "bg-veraison-500",
-  approved: "bg-canopy-600",
-  edited: "bg-canopy-600",
-  completed: "bg-canopy-900",
-  rejected: "bg-soil-500",
+const STATUS_LABEL: Record<TicketStatus, string> = {
+  new: "Needs review",
+  approved: "Approved",
+  edited: "Edited",
+  completed: "Completed",
+  rejected: "Dismissed",
+};
+
+const STATUS_BAR: Record<TicketStatus, string> = {
+  new: "bg-status-new",
+  approved: "bg-status-ok",
+  edited: "bg-status-ok",
+  completed: "bg-accent",
+  rejected: "bg-status-muted",
 };
 
 function countBy<T extends string>(values: T[]): Map<T, number> {
@@ -54,32 +38,31 @@ function countBy<T extends string>(values: T[]): Map<T, number> {
   return counts;
 }
 
-/** Readout-style stat card. The numeral is the point, so it carries the weight. */
 function Stat({
   label,
   value,
   hint,
-  accent = "text-canopy-900",
+  tone = "text-primary",
 }: {
   label: string;
   value: string | number;
   hint?: string;
-  accent?: string;
+  tone?: string;
 }) {
   return (
-    <div className="border border-canopy-900/10 bg-white/50 px-4 py-3">
-      <p className="font-mono text-[10px] tracking-widest text-canopy-700/70">
-        {label}
+    <div className="card px-4 py-3.5">
+      <p className="text-[12px] font-medium text-tertiary">{label}</p>
+      <p
+        className={`mt-1.5 font-mono text-[28px] leading-none tabular-nums ${tone}`}
+      >
+        {value}
       </p>
-      <p className={`mt-2 font-mono text-3xl leading-none ${accent}`}>{value}</p>
-      {hint ? (
-        <p className="mt-1.5 font-mono text-[10px] text-canopy-700/60">{hint}</p>
-      ) : null}
+      {hint ? <p className="mt-1.5 text-[11px] text-tertiary">{hint}</p> : null}
     </div>
   );
 }
 
-/** One horizontal bar. CSS only — a chart library would be overbuilding this. */
+/** CSS-only horizontal bar. A chart library would be overbuilding this. */
 function Bar({
   label,
   count,
@@ -94,92 +77,62 @@ function Bar({
   return (
     <div className="flex items-center gap-3">
       <span
-        className="w-40 shrink-0 truncate text-sm text-canopy-900 sm:w-80"
+        className="w-[38%] shrink-0 truncate text-[13px] text-primary sm:w-[42%] sm:text-sm"
         title={label}
       >
         {label}
       </span>
-      <div className="h-5 flex-1 bg-canopy-900/5">
+      <div className="h-2 flex-1 overflow-hidden rounded-pill bg-sunken">
         <div
-          className={`h-full ${color} transition-[width] duration-500 ease-out`}
-          // A zero draws nothing. A minimum width would read as "a few".
+          className={`h-full rounded-pill ${color} transition-[width] duration-500 ease-out`}
+          // A zero draws nothing — a minimum width would read as "a few".
           style={{
-            width: count === 0 || max === 0 ? "0%" : `${Math.max((count / max) * 100, 2)}%`,
+            width:
+              count === 0 || max === 0 ? "0%" : `${Math.max((count / max) * 100, 3)}%`,
           }}
         />
       </div>
-      <span className="w-8 shrink-0 text-right font-mono text-sm tabular-nums text-canopy-900">
+      <span className="w-6 shrink-0 text-right font-mono text-[13px] tabular-nums text-secondary">
         {count}
       </span>
     </div>
   );
 }
 
-export default function InsightsPage() {
-  const [tickets, setTickets] = useState<Ticket[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<string>("");
-
-  const load = useCallback(async (signal?: AbortSignal) => {
-    try {
-      // no-store: this page must show a ticket that was marked complete seconds
-      // ago on /todo — a cached list would silently make the demo look broken.
-      const response = await fetch("/api/tickets", { cache: "no-store", signal });
-      if (!response.ok) throw new Error(`GET /api/tickets -> ${response.status}`);
-      const data = (await response.json()) as { tickets: Ticket[] };
-      if (signal?.aborted) return;
-      setTickets(data.tickets);
-      setError(null);
-      setUpdatedAt(new Date().toLocaleTimeString("en-NZ", { hour12: false }));
-    } catch (cause) {
-      if (signal?.aborted) return;
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    // Fetching remote data is exactly the "subscribe to an external system" case
-    // effects are for, and every setState above happens after an await, never
-    // synchronously in the effect body — so the cascading-render risk the rule
-    // guards against does not apply. The controller drops any in-flight response
-    // on unmount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load(controller.signal);
-
-    // Coming back from /todo after marking something complete should show the
-    // new numbers without a manual reload.
-    const refresh = () => {
-      if (document.visibilityState === "visible") void load();
-    };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      controller.abort();
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [load]);
-
-  const all = tickets ?? [];
-  const byStatus = countBy(all.map((t) => t.status));
-  const byCrop = countBy(all.map((t) => t.cropType));
-  const byCondition = countBy(all.map((t) => t.diagnosis.condition));
-
-  const diseased = all.filter((t) => t.diagnosis.condition !== "Healthy");
-  const openWork = all.filter(
-    (t) => t.status === "approved" || t.status === "edited",
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="card px-4 py-4 sm:px-5 sm:py-5">
+      <h2 className="text-[13px] font-semibold text-primary">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </section>
   );
-  const diseaseRate = all.length
-    ? Math.round((diseased.length / all.length) * 100)
+}
+
+export default function InsightsPage() {
+  const { tickets, loading, error } = useTicketStore();
+
+  const byStatus = countBy(tickets.map((t) => t.status));
+  const byCrop = countBy(tickets.map((t) => t.cropType));
+  const byCondition = countBy(tickets.map((t) => t.diagnosis.condition));
+
+  const diseased = tickets.filter((t) => t.diagnosis.condition !== "Healthy");
+  const openWork = tickets.filter(isActionable);
+  const diseaseRate = tickets.length
+    ? Math.round((diseased.length / tickets.length) * 100)
     : 0;
-  const avgConfidence = all.length
-    ? all.reduce((sum, t) => sum + t.diagnosis.confidence, 0) / all.length
+  const avgConfidence = tickets.length
+    ? tickets.reduce((sum, t) => sum + t.diagnosis.confidence, 0) / tickets.length
     : 0;
+  const lowConfidence = tickets.filter((t) => t.diagnosis.confidence < 0.85).length;
 
   const conditionRows = [...byCondition.entries()].sort((a, b) => {
-    // Healthy last — the diseases are what the farmer is scanning this page for.
+    // Healthy last — the diseases are what the farmer opens this page for.
     if (a[0] === "Healthy") return 1;
     if (b[0] === "Healthy") return -1;
     return b[1] - a[1];
@@ -187,192 +140,165 @@ export default function InsightsPage() {
   const conditionMax = Math.max(1, ...conditionRows.map(([, n]) => n));
   const statusMax = Math.max(1, ...STATUS_ORDER.map((s) => byStatus.get(s) ?? 0));
 
+  /** Colour a condition bar by clinical severity, not by chart index. */
+  function conditionColor(condition: string): string {
+    if (condition === "Healthy") return SEVERITY_ACCENT.none.bar;
+    const sample = tickets.find((t) => t.diagnosis.condition === condition);
+    return sample ? SEVERITY_ACCENT[severityFor(sample)].bar : SEVERITY_ACCENT.none.bar;
+  }
+
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-canopy-900/10 pb-4">
-        <div>
-          <p className="font-mono text-xs tracking-widest text-soil-500">
-            FARMSENTRY // RENWICK-01
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-canopy-900">Insights</h1>
-        </div>
-        <nav className="flex items-center gap-4 font-mono text-xs">
-          <a className="text-canopy-600 hover:underline" href="/map">
-            ← MAP
-          </a>
-          <a className="text-canopy-600 hover:underline" href="/todo">
-            TO-DO
-          </a>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="border border-canopy-900/15 px-2 py-1 text-canopy-700 transition-colors hover:bg-canopy-900/5"
-          >
-            REFRESH
-          </button>
-        </nav>
-      </header>
-
-      {error ? (
-        <p className="mt-6 border border-alert-600/30 bg-alert-600/5 px-4 py-3 font-mono text-xs text-alert-600">
-          {error}
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-9">
+        <h1 className="text-[26px] font-semibold tracking-[-0.01em] text-primary sm:text-3xl">
+          Insights
+        </h1>
+        <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-secondary">
+          Every scan this season, and what came of it.
         </p>
-      ) : null}
 
-      {tickets === null && !error ? (
-        <p className="mt-8 font-mono text-xs text-canopy-700/60">LOADING…</p>
-      ) : null}
+        {error && (
+          <p
+            role="alert"
+            className="mt-5 rounded-card border border-status-alert/30 bg-status-alert/10 px-3.5 py-2.5 text-[13px] text-status-alert"
+          >
+            {error}
+          </p>
+        )}
 
-      {tickets !== null ? (
-        <>
-          <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <Stat label="TOTAL SCANS" value={all.length} />
-            <Stat
-              label="NEEDS REVIEW"
-              value={byStatus.get("new") ?? 0}
-              accent="text-veraison-500"
-              hint="status: new"
-            />
-            <Stat
-              label="OPEN ACTIONS"
-              value={openWork.length}
-              accent="text-canopy-600"
-              hint="approved + edited"
-            />
-            <Stat
-              label="COMPLETED"
-              value={byStatus.get("completed") ?? 0}
-              accent="text-canopy-600"
-            />
-            <Stat
-              label="DISEASE RATE"
-              value={`${diseaseRate}%`}
-              accent={diseaseRate >= 40 ? "text-alert-600" : "text-canopy-900"}
-              hint={`${diseased.length} of ${all.length} scans`}
-            />
-          </section>
-
-          <section className="mt-10">
-            <h2 className="font-mono text-xs tracking-widest text-canopy-600">
-              BY CONDITION
-            </h2>
-            <div className="mt-4 space-y-2">
-              {conditionRows.length === 0 ? (
-                <p className="font-mono text-xs text-canopy-700/60">NO SCANS YET</p>
-              ) : (
-                conditionRows.map(([condition, count]) => {
-                  // Colour by clinical severity, not by chart index — the bar
-                  // tells the farmer how urgent the block is, at a glance.
-                  const crop =
-                    all.find((t) => t.diagnosis.condition === condition)?.cropType ??
-                    "grape";
-                  const severity =
-                    condition === "Healthy" ? "none" : severityOf(crop, condition);
-                  return (
-                    <Bar
-                      key={condition}
-                      label={condition}
-                      count={count}
-                      max={conditionMax}
-                      color={SEVERITY_COLOR[severity] ?? "bg-canopy-600"}
-                    />
-                  );
-                })
-              )}
+        {loading ? (
+          <p className="mt-10 font-mono text-xs tracking-[0.14em] text-tertiary">
+            LOADING…
+          </p>
+        ) : tickets.length === 0 ? (
+          <p className="mt-8 rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[14px] text-tertiary">
+            No scans yet. Trigger one from the map and it shows up here.
+          </p>
+        ) : (
+          <div className="mt-7 space-y-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Stat label="Total scans" value={tickets.length} />
+              <Stat
+                label="Needs review"
+                value={byStatus.get("new") ?? 0}
+                tone="text-status-new"
+              />
+              <Stat
+                label="Open actions"
+                value={openWork.length}
+                tone="text-status-ok"
+                hint="approved + edited"
+              />
+              <Stat
+                label="Disease rate"
+                value={`${diseaseRate}%`}
+                tone={diseaseRate >= 40 ? "text-status-alert" : "text-primary"}
+                hint={`${diseased.length} of ${tickets.length}`}
+              />
             </div>
-            <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] text-canopy-700/60">
-              <span>
-                <span className="mr-1.5 inline-block h-2 w-2 bg-alert-600 align-middle" />
-                HIGH SEVERITY
-              </span>
-              <span>
-                <span className="mr-1.5 inline-block h-2 w-2 bg-veraison-500 align-middle" />
-                MEDIUM
-              </span>
-              <span>
-                <span className="mr-1.5 inline-block h-2 w-2 bg-canopy-600 align-middle" />
-                HEALTHY
-              </span>
-            </p>
-          </section>
 
-          <section className="mt-10 grid gap-8 sm:grid-cols-2">
-            <div>
-              <h2 className="font-mono text-xs tracking-widest text-canopy-600">
-                BY STATUS
-              </h2>
-              <div className="mt-4 space-y-2">
-                {STATUS_ORDER.map((status) => (
+            <Section title="By condition">
+              <div className="space-y-2.5">
+                {conditionRows.map(([condition, count]) => (
                   <Bar
-                    key={status}
-                    label={status}
-                    count={byStatus.get(status) ?? 0}
-                    max={statusMax}
-                    color={STATUS_COLOR[status]}
+                    key={condition}
+                    label={condition}
+                    count={count}
+                    max={conditionMax}
+                    color={conditionColor(condition)}
                   />
                 ))}
               </div>
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-hairline pt-3 text-[11px] text-tertiary">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-status-alert" />
+                  High severity
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-status-new" />
+                  Medium
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-status-ok" />
+                  Healthy
+                </span>
+              </div>
+            </Section>
+
+            <Section title="By status">
+              <div className="space-y-2.5">
+                {STATUS_ORDER.map((status) => (
+                  <Bar
+                    key={status}
+                    label={STATUS_LABEL[status]}
+                    count={byStatus.get(status) ?? 0}
+                    max={statusMax}
+                    color={STATUS_BAR[status]}
+                  />
+                ))}
+              </div>
+            </Section>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Section title="By crop">
+                <dl className="space-y-3">
+                  {(["grape", "apple"] as CropType[]).map((crop) => {
+                    const cropTickets = tickets.filter(
+                      (t: Ticket) => t.cropType === crop,
+                    );
+                    const flagged = cropTickets.filter(
+                      (t) => t.diagnosis.condition !== "Healthy",
+                    ).length;
+                    return (
+                      <div
+                        key={crop}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <dt className="text-[14px] capitalize text-primary">
+                          {crop}
+                        </dt>
+                        <dd className="font-mono text-[14px] tabular-nums text-primary">
+                          {byCrop.get(crop) ?? 0}
+                          <span className="ml-2 text-[12px] text-tertiary">
+                            {flagged} flagged
+                          </span>
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </Section>
+
+              <Section title="Model">
+                <dl className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-[14px] text-primary">Mean confidence</dt>
+                    <dd className="font-mono text-[14px] tabular-nums text-primary">
+                      {avgConfidence.toFixed(2)}
+                    </dd>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-[14px] text-primary">
+                      Low confidence
+                      <span className="ml-1 text-[12px] text-tertiary">
+                        &lt; 0.85
+                      </span>
+                    </dt>
+                    <dd className="font-mono text-[14px] tabular-nums text-primary">
+                      {lowConfidence}
+                    </dd>
+                  </div>
+                </dl>
+              </Section>
             </div>
 
-            <div>
-              <h2 className="font-mono text-xs tracking-widest text-canopy-600">
-                BY CROP
-              </h2>
-              <dl className="mt-4 divide-y divide-canopy-900/10 border-y border-canopy-900/10">
-                {(["grape", "apple"] as CropType[]).map((crop) => {
-                  const cropTickets = all.filter((t) => t.cropType === crop);
-                  const cropDiseased = cropTickets.filter(
-                    (t) => t.diagnosis.condition !== "Healthy",
-                  ).length;
-                  return (
-                    <div
-                      key={crop}
-                      className="flex items-baseline justify-between py-2.5"
-                    >
-                      <dt className="text-sm capitalize text-canopy-900">{crop}</dt>
-                      <dd className="font-mono text-sm tabular-nums text-canopy-900">
-                        {byCrop.get(crop) ?? 0}
-                        <span className="ml-2 text-xs text-canopy-700/60">
-                          {cropDiseased} flagged
-                        </span>
-                      </dd>
-                    </div>
-                  );
-                })}
-              </dl>
-
-              <h2 className="mt-8 font-mono text-xs tracking-widest text-canopy-600">
-                MODEL
-              </h2>
-              <dl className="mt-4 divide-y divide-canopy-900/10 border-y border-canopy-900/10">
-                <div className="flex items-baseline justify-between py-2.5">
-                  <dt className="text-sm text-canopy-900">Mean confidence</dt>
-                  <dd className="font-mono text-sm tabular-nums text-canopy-900">
-                    {avgConfidence.toFixed(2)}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between py-2.5">
-                  <dt className="text-sm text-canopy-900">Low confidence (&lt;0.85)</dt>
-                  <dd className="font-mono text-sm tabular-nums text-canopy-900">
-                    {all.filter((t) => t.diagnosis.confidence < 0.85).length}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </section>
-
-          <footer className="mt-12 border-t border-soil-500/20 pt-4 font-mono text-[10px] leading-relaxed text-canopy-700/60">
-            <p>
-              {updatedAt ? `UPDATED ${updatedAt} · ` : ""}
-              {all.length} TICKETS · SOURCE GET /api/tickets
-            </p>
-            <p className="mt-1">
+            <p className="px-1 pt-2 text-[12px] leading-relaxed text-tertiary">
               Triage and prioritisation only. Conditions are model-suggested and
               farmer-verified, not a registered chemical prescription.
             </p>
-          </footer>
-        </>
-      ) : null}
-    </main>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

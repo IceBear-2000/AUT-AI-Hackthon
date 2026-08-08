@@ -15,11 +15,13 @@ import type { Ticket } from "@/lib/types";
  * review, so it gets veraison. Actioned tickets go canopy, rejected go soil.
  */
 function pinColor(ticket: Ticket): string {
-  if (ticket.status === "rejected") return "var(--color-soil-500)";
-  if (ticket.status !== "new") return "var(--color-canopy-600)";
+  // Semantic tokens, so pins stay legible when the theme flips. These land in
+  // an inline style on an HTML span, where var() resolves normally.
+  if (ticket.status === "rejected") return "var(--status-muted)";
+  if (ticket.status !== "new") return "var(--status-ok)";
   return ticket.diagnosis.condition === "Healthy"
-    ? "var(--color-veraison-500)"
-    : "var(--color-alert-600)";
+    ? "var(--status-new)"
+    : "var(--status-alert)";
 }
 
 function pinIcon(color: string, selected: boolean, ping: boolean): L.DivIcon {
@@ -109,10 +111,11 @@ export default function MapView({
         positions={DEMO_WAYPOINTS.map((w) => [w.lat, w.lng] as [number, number])}
         pathOptions={{
           // Literal hex, not a CSS var: Leaflet writes stroke as an SVG
-          // presentation attribute, and those don't resolve var().
-          color: "#8c5a34",
+          // presentation attribute, and those don't resolve var(). Picked as a
+          // mid soil tone that holds up against both the light and dark tiles.
+          color: "#a8794e",
           weight: 1.5,
-          opacity: 0.55,
+          opacity: 0.6,
           dashArray: "6 8",
         }}
       />

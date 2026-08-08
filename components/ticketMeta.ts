@@ -34,25 +34,27 @@ export function severityFor(ticket: Ticket): "high" | "medium" | "none" {
   return severity === "high" || severity === "medium" ? severity : "none";
 }
 
-/** Tailwind needs whole class strings, so these are written out, never built up. */
+/** Tailwind needs whole class strings, so these are written out, never built up.
+ *  All semantic tokens — they re-resolve per theme, so nothing here is a
+ *  light-mode-only colour. */
 export const SEVERITY_ACCENT: Record<
   "high" | "medium" | "none",
   { text: string; bar: string; rule: string }
 > = {
   high: {
-    text: "text-alert-600",
-    bar: "bg-alert-600",
-    rule: "border-alert-600/35",
+    text: "text-status-alert",
+    bar: "bg-status-alert",
+    rule: "border-status-alert/35",
   },
   medium: {
-    text: "text-veraison-500",
-    bar: "bg-veraison-500",
-    rule: "border-veraison-500/35",
+    text: "text-status-new",
+    bar: "bg-status-new",
+    rule: "border-status-new/35",
   },
   none: {
-    text: "text-canopy-600",
-    bar: "bg-canopy-600",
-    rule: "border-canopy-600/30",
+    text: "text-status-ok",
+    bar: "bg-status-ok",
+    rule: "border-status-ok/30",
   },
 };
 
@@ -62,28 +64,28 @@ export const STATUS_META: Record<
 > = {
   new: {
     label: "Needs review",
-    pill: "bg-veraison-500/12 text-[#8a5312] ring-veraison-500/30",
-    dot: "bg-veraison-500",
+    pill: "bg-status-new/14 text-status-new ring-status-new/30",
+    dot: "bg-status-new",
   },
   approved: {
     label: "Approved",
-    pill: "bg-canopy-600/12 text-canopy-700 ring-canopy-600/30",
-    dot: "bg-canopy-600",
+    pill: "bg-status-ok/14 text-status-ok ring-status-ok/30",
+    dot: "bg-status-ok",
   },
   edited: {
     label: "Edited by farmer",
-    pill: "bg-soil-500/12 text-soil-500 ring-soil-500/30",
-    dot: "bg-soil-500",
+    pill: "bg-status-muted/14 text-status-muted ring-status-muted/30",
+    dot: "bg-status-muted",
   },
   rejected: {
     label: "Dismissed",
-    pill: "bg-canopy-900/8 text-canopy-900/55 ring-canopy-900/15",
-    dot: "bg-canopy-900/35",
+    pill: "bg-sunken text-tertiary ring-hairline",
+    dot: "bg-status-muted",
   },
   completed: {
     label: "Completed",
-    pill: "bg-canopy-600/12 text-canopy-700 ring-canopy-600/30",
-    dot: "bg-canopy-600",
+    pill: "bg-status-ok/14 text-status-ok ring-status-ok/30",
+    dot: "bg-status-ok",
   },
 };
 

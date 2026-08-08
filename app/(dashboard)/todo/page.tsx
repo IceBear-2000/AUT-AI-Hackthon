@@ -5,8 +5,8 @@
 // roadmap-flagged and non-functional: that honesty is a pitch asset (Section 15).
 
 import { useCallback, useMemo, useState } from "react";
-import DashboardHeader from "@/components/DashboardHeader";
 import TicketPanel from "@/components/TicketPanel";
+import { useTicketStore } from "@/components/TicketsProvider";
 import {
   CROP_LABEL,
   SEVERITY_ACCENT,
@@ -15,14 +15,14 @@ import {
   isActionable,
   severityFor,
 } from "@/components/ticketMeta";
-import { patchTicket, useTickets } from "@/components/useTickets";
+import { patchTicket } from "@/components/useTickets";
 import type { Ticket } from "@/lib/types";
 
 const SECTION_LABEL =
-  "font-mono text-[11px] uppercase tracking-[0.18em] text-canopy-900/50";
+  "font-mono text-[11px] uppercase tracking-[0.18em] text-tertiary";
 
 export default function TodoPage() {
-  const { tickets, loading, error, applyUpdate } = useTickets();
+  const { tickets, loading, error, applyUpdate } = useTicketStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -62,12 +62,12 @@ export default function TodoPage() {
   );
 
   return (
-    <>
-      <DashboardHeader tickets={tickets} />
-
-      <main className="mx-auto max-w-5xl px-6 pb-24 pt-8">
-        <h1 className="text-2xl font-semibold text-canopy-900">To-do</h1>
-        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-canopy-900/65">
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-9">
+        <h1 className="text-[26px] font-semibold tracking-[-0.01em] text-primary sm:text-3xl">
+          To-do
+        </h1>
+        <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-secondary">
           Everything you approved from the map, in the order it was flagged.
           Tick it off when the block is done.
         </p>
@@ -75,7 +75,7 @@ export default function TodoPage() {
         {actionError && (
           <p
             role="alert"
-            className="mt-5 border-l-2 border-alert-600 bg-alert-600/[0.06] px-3 py-2 font-mono text-[11px] text-alert-600"
+            className="mt-5 border-l-2 border-status-alert bg-status-alert/10 px-3 py-2 font-mono text-[11px] text-status-alert"
           >
             {actionError}
           </p>
@@ -83,14 +83,14 @@ export default function TodoPage() {
         {error && (
           <p
             role="alert"
-            className="mt-5 border-l-2 border-alert-600 bg-alert-600/[0.06] px-3 py-2 font-mono text-[11px] text-alert-600"
+            className="mt-5 border-l-2 border-status-alert bg-status-alert/10 px-3 py-2 font-mono text-[11px] text-status-alert"
           >
             {error}
           </p>
         )}
 
         {loading ? (
-          <p className="mt-10 font-mono text-xs tracking-[0.14em] text-canopy-900/40">
+          <p className="mt-10 font-mono text-xs tracking-[0.14em] text-tertiary">
             LOADING TICKETS…
           </p>
         ) : (
@@ -101,11 +101,11 @@ export default function TodoPage() {
               <section>
                 <div className="flex items-baseline gap-3">
                   <h2 className={SECTION_LABEL}>Needs review</h2>
-                  <span className="font-mono text-[11px] text-canopy-900/40">
+                  <span className="font-mono text-[11px] text-tertiary">
                     {groups.review.length}
                   </span>
                 </div>
-                <ul className="mt-3 divide-y divide-canopy-900/8 border-y border-canopy-900/10">
+                <ul className="mt-3 space-y-2.5">
                   {groups.review.map((ticket) => (
                     <TaskRow
                       key={ticket.id}
@@ -124,7 +124,7 @@ export default function TodoPage() {
             <section>
               <div className="flex items-baseline gap-3">
                 <h2 className={SECTION_LABEL}>Your tasks</h2>
-                <span className="font-mono text-[11px] text-canopy-900/40">
+                <span className="font-mono text-[11px] text-tertiary">
                   {groups.farmer.length}
                 </span>
               </div>
@@ -134,14 +134,14 @@ export default function TodoPage() {
                   Nothing waiting on you. Approve a flagged scan from the{" "}
                   <a
                     href="/map"
-                    className="underline underline-offset-2 hover:text-canopy-900"
+                    className="underline underline-offset-2 hover:text-primary"
                   >
                     map
                   </a>{" "}
                   and it lands here.
                 </EmptyState>
               ) : (
-                <ul className="mt-3 divide-y divide-canopy-900/8 border-y border-canopy-900/10">
+                <ul className="mt-3 space-y-2.5">
                   {groups.farmer.map((ticket) => (
                     <TaskRow
                       key={ticket.id}
@@ -159,14 +159,14 @@ export default function TodoPage() {
             <section>
               <div className="flex items-baseline gap-3">
                 <h2 className={SECTION_LABEL}>Drone queue</h2>
-                <span className="rounded-[2px] bg-soil-500/12 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-soil-500">
+                <span className="rounded-[2px] bg-status-muted/12 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-status-muted">
                   Roadmap
                 </span>
-                <span className="font-mono text-[11px] text-canopy-900/40">
+                <span className="font-mono text-[11px] text-tertiary">
                   {groups.drone.length}
                 </span>
               </div>
-              <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-canopy-900/55">
+              <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-secondary">
                 Queued, not flown. NZ CAA Part 102 requires a supervising human
                 observer for any agrichemical drone flight regardless of
                 autonomy — what we automate today is the scheduling and
@@ -179,7 +179,7 @@ export default function TodoPage() {
                   panel to stage it here.
                 </EmptyState>
               ) : (
-                <ul className="mt-3 divide-y divide-canopy-900/8 border-y border-canopy-900/10 opacity-80">
+                <ul className="mt-3 space-y-2.5 opacity-80">
                   {groups.drone.map((ticket) => (
                     <TaskRow
                       key={ticket.id}
@@ -198,11 +198,11 @@ export default function TodoPage() {
               <section>
                 <div className="flex items-baseline gap-3">
                   <h2 className={SECTION_LABEL}>Completed</h2>
-                  <span className="font-mono text-[11px] text-canopy-900/40">
+                  <span className="font-mono text-[11px] text-tertiary">
                     {groups.completed.length}
                   </span>
                 </div>
-                <ul className="mt-3 divide-y divide-canopy-900/8 border-y border-canopy-900/10">
+                <ul className="mt-3 space-y-2.5">
                   {groups.completed.map((ticket) => (
                     <TaskRow
                       key={ticket.id}
@@ -218,14 +218,14 @@ export default function TodoPage() {
             )}
           </div>
         )}
-      </main>
+      </div>
 
       <TicketPanel
         ticket={selected}
         onClose={() => setSelectedId(null)}
         onUpdated={applyUpdate}
       />
-    </>
+    </div>
   );
 }
 
@@ -249,19 +249,26 @@ function TaskRow({
   const accent = SEVERITY_ACCENT[severityFor(ticket)];
 
   return (
-    <li className="group flex items-start gap-3.5 py-3.5">
+    <li className="card card-interactive relative flex items-start gap-3.5 overflow-hidden py-3.5 pl-4 pr-3.5">
+      {/* Severity reads at a glance from the card edge, before any text. */}
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-[3px] ${accent.bar} ${
+          done ? "opacity-30" : ""
+        }`}
+      />
       <span className="pt-0.5">
         {review ? (
           <span
             title="Not triaged yet — open it to approve, edit or reject"
             className="grid h-[18px] w-[18px] place-items-center"
           >
-            <span className="h-2 w-2 rounded-full bg-veraison-500" />
+            <span className="h-2 w-2 rounded-full bg-status-new" />
           </span>
         ) : queued ? (
           <span
             title="Drone execution is roadmap — not available tonight"
-            className="grid h-[18px] w-[18px] place-items-center rounded-[3px] border border-dashed border-soil-500/50 text-soil-500"
+            className="grid h-[18px] w-[18px] place-items-center rounded-[3px] border border-dashed border-status-muted/50 text-status-muted"
           >
             <svg viewBox="0 0 16 16" className="h-2.5 w-2.5" aria-hidden="true">
               <path
@@ -280,7 +287,7 @@ function TaskRow({
             disabled={pending}
             onChange={onToggle}
             aria-label={`Mark ${ticket.diagnosis.condition} at ${formatCoords(ticket.lat, ticket.lng)} complete`}
-            className="h-[18px] w-[18px] cursor-pointer accent-canopy-600 disabled:cursor-wait"
+            className="h-[18px] w-[18px] cursor-pointer accent-[var(--accent)] disabled:cursor-wait"
           />
         )}
       </span>
@@ -289,12 +296,12 @@ function TaskRow({
         <button
           type="button"
           onClick={onOpen}
-          className="text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-canopy-600"
+          className="text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <span
             className={`text-[15px] font-medium ${
               done
-                ? "text-canopy-900/45 line-through"
+                ? "text-tertiary line-through"
                 : `${accent.text} group-hover:underline underline-offset-2`
             }`}
           >
@@ -304,19 +311,19 @@ function TaskRow({
 
         <p
           className={`mt-0.5 text-[13px] leading-relaxed ${
-            done ? "text-canopy-900/35" : "text-canopy-900/70"
+            done ? "text-tertiary" : "text-secondary"
           }`}
         >
           {ticket.diagnosis.suggestedTreatment}
         </p>
 
         {ticket.farmerNotes && (
-          <p className="mt-1.5 border-l-2 border-soil-500/40 pl-2.5 text-[12px] leading-relaxed text-canopy-900/60">
+          <p className="mt-1.5 border-l-2 border-status-muted/40 pl-2.5 text-[12px] leading-relaxed text-secondary">
             {ticket.farmerNotes}
           </p>
         )}
 
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-canopy-900/45">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-tertiary">
           <span>{CROP_LABEL[ticket.cropType]}</span>
           <span aria-hidden="true">·</span>
           <span>{formatCoords(ticket.lat, ticket.lng)}</span>
@@ -325,13 +332,13 @@ function TaskRow({
           {ticket.status === "edited" && (
             <>
               <span aria-hidden="true">·</span>
-              <span className="text-soil-500">Edited</span>
+              <span className="text-status-muted">Edited</span>
             </>
           )}
         </p>
       </div>
 
-      <span className="shrink-0 pt-0.5 font-mono text-[10px] tracking-[0.12em] text-canopy-900/35">
+      <span className="shrink-0 pt-0.5 font-mono text-[10px] tracking-[0.12em] text-tertiary">
         {ticket.id.toUpperCase()}
       </span>
     </li>
@@ -340,7 +347,7 @@ function TaskRow({
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-3 border border-dashed border-canopy-900/15 px-4 py-6 text-center text-[13px] leading-relaxed text-canopy-900/50">
+    <p className="mt-3 rounded-card border border-dashed border-hairline px-4 py-7 text-center text-[13px] leading-relaxed text-tertiary">
       {children}
     </p>
   );
