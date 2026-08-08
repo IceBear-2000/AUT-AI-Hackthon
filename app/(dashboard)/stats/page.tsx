@@ -1,7 +1,10 @@
-// Insights — Spec Section 10 task 5.
+// Statistics — Spec Section 10 task 5.
 // Stat cards plus one chart, counts by status / crop / condition. Reads the
 // shared ticket store, so marking something complete on /todo is reflected the
 // moment you land here. Deliberately not overbuilt.
+//
+// Named "Statistics" rather than "Insights" so it can't be confused with
+// /ai-insights, which is the triage queue and a different job entirely.
 "use client";
 
 import { useTicketStore } from "@/components/TicketsProvider";
@@ -114,7 +117,7 @@ function Section({
   );
 }
 
-export default function InsightsPage() {
+export default function StatisticsPage() {
   const { tickets, loading, error } = useTicketStore();
 
   const byStatus = countBy(tickets.map((t) => t.status));
@@ -151,7 +154,7 @@ export default function InsightsPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-9">
         <h1 className="text-[26px] font-semibold tracking-[-0.01em] text-primary sm:text-3xl">
-          Insights
+          Statistics
         </h1>
         <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-secondary">
           Every scan this season, and what came of it.

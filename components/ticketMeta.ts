@@ -94,6 +94,71 @@ export function isActionable(ticket: Ticket): boolean {
   return ticket.status === "approved" || ticket.status === "edited";
 }
 
+/* ── Workflow stages ───────────────────────────────────────────────────────
+   Three screens, one frozen status field. Where a ticket sits also decides
+   what the farmer can do to it, so both are derived in one place rather than
+   passed down as a prop each screen could get wrong. */
+
+export type Stage = "triage" | "task" | "archive";
+
+export function stageFor(ticket: Ticket): Stage {
+  if (ticket.status === "new") return "triage";
+  if (ticket.status === "completed" || ticket.status === "rejected") {
+    return "archive";
+  }
+  return "task";
+}
+
+/* ── Triage buckets ────────────────────────────────────────────────────────
+   Critical / Medium / All good read straight off treatments.json severity, so
+   the grouping is the content library's clinical judgement rather than a
+   second opinion invented in the UI. */
+
+export type Bucket = "critical" | "medium" | "ok";
+
+export const BUCKET_ORDER: Bucket[] = ["critical", "medium", "ok"];
+
+export function bucketFor(ticket: Ticket): Bucket {
+  const severity = severityFor(ticket);
+  if (severity === "high") return "critical";
+  if (severity === "medium") return "medium";
+  return "ok";
+}
+
+export const BUCKET_META: Record<
+  Bucket,
+  { label: string; blurb: string; dot: string; text: string; edge: string }
+> = {
+  critical: {
+    label: "Critical",
+    blurb: "High disease pressure — act on these first.",
+    dot: "bg-status-alert",
+    text: "text-status-alert",
+    edge: "border-t-status-alert",
+  },
+  medium: {
+    label: "Medium",
+    blurb: "Worth planning for, not an emergency.",
+    dot: "bg-status-new",
+    text: "text-status-new",
+    edge: "border-t-status-new",
+  },
+  ok: {
+    label: "All good",
+    blurb: "Nothing found — logged as a healthy baseline.",
+    dot: "bg-status-ok",
+    text: "text-status-ok",
+    edge: "border-t-status-ok",
+  },
+};
+
+/** Critical first, then medium, then healthy; newest first inside a bucket. */
+export function byUrgency(a: Ticket, b: Ticket): number {
+  const rank =
+    BUCKET_ORDER.indexOf(bucketFor(a)) - BUCKET_ORDER.indexOf(bucketFor(b));
+  return rank !== 0 ? rank : b.createdAt.localeCompare(a.createdAt);
+}
+
 export const CROP_LABEL: Record<CropType, string> = {
   grape: "Grape",
   apple: "Apple",

@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from "react";
 
 type Theme = "light" | "system" | "dark";
-const STORAGE_KEY = "farmsentry-theme";
+const STORAGE_KEY = "cropiq-theme";
 
 function apply(theme: Theme): void {
   const root = document.documentElement;

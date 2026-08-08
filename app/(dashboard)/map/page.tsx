@@ -1,16 +1,20 @@
-// Map view — pins, Trigger Scan, drone animation. Spec Sections 7 and 8.
+// Map view — the survey, and the one control that drives the whole demo.
 //
-// Tickets come from the shared store in the dashboard layout, so approving
-// something on /todo is reflected here without a reload. The ticket panel is
-// the real one shared with /todo, not a stub.
+// "Trigger analysis" flies the full waypoint path rather than producing a
+// single ticket: the drone steps from block to block dropping findings as it
+// goes, which is what a real sweep looks like and makes the work legible.
+//
+// Tickets come from the shared store, so approving something in AI Insights is
+// reflected here without a reload.
 
 "use client";
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import TicketPanel from "@/components/TicketPanel";
-import TriggerScanButton from "@/components/TriggerScanButton";
+import TriggerAnalysisButton from "@/components/TriggerAnalysisButton";
 import { useTicketStore } from "@/components/TicketsProvider";
+import { DEMO_WAYPOINTS } from "@/lib/droneSimulator";
 import type { Ticket } from "@/lib/types";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -27,11 +31,20 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 // One ping cycle is 1.6s and it runs twice (see .pin-ping in globals.css).
 const PING_MS = 3400;
 
+// One finding per waypoint, so a sweep covers the survey grid exactly once.
+const SWEEP_POINTS = DEMO_WAYPOINTS.length;
+
+// Paced so the whole run lands around six seconds — long enough to narrate
+// over, short enough to hold a room.
+const STEP_MS = 700;
+
 const LEGEND = [
   { label: "Flagged", color: "var(--status-alert)" },
   { label: "Needs review", color: "var(--status-new)" },
   { label: "Actioned", color: "var(--status-ok)" },
 ];
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function MapPage() {
   const { tickets, applyUpdate, addTicket } = useTicketStore();
@@ -39,41 +52,64 @@ export default function MapPage() {
   const [pingTicketId, setPingTicketId] = useState<string | null>(null);
   const [droneWaypointIndex, setDroneWaypointIndex] = useState(0);
   const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Navigating away mid-sweep must not keep writing to an unmounted page.
+  const aliveRef = useRef(true);
 
   // Read through the store rather than holding a copy, so a status change made
   // in the panel repaints the pin immediately.
   const selected = tickets.find((ticket) => ticket.id === selectedId) ?? null;
 
   useEffect(() => {
+    aliveRef.current = true;
     return () => {
+      aliveRef.current = false;
       if (pingTimer.current) clearTimeout(pingTimer.current);
     };
   }, []);
 
-  const triggerScan = useCallback(async () => {
+  const runAnalysis = useCallback(async () => {
     setScanning(true);
     setError(null);
+    setProgress(0);
+    if (pingTimer.current) clearTimeout(pingTimer.current);
+
     try {
-      const response = await fetch("/api/drone/trigger", { method: "POST" });
-      if (!response.ok) throw new Error(String(response.status));
-      const data = (await response.json()) as {
-        ticket: Ticket;
-        droneWaypointIndex: number;
-      };
+      for (let step = 0; step < SWEEP_POINTS; step += 1) {
+        if (!aliveRef.current) return;
 
-      addTicket(data.ticket);
-      setDroneWaypointIndex(data.droneWaypointIndex);
+        // The request and the beat run together, so the sweep keeps its rhythm
+        // when the model answers fast and simply stretches when it doesn't —
+        // rather than the pacing collapsing into a burst at the end.
+        const [response] = await Promise.all([
+          fetch("/api/drone/trigger", { method: "POST" }),
+          step < SWEEP_POINTS - 1 ? delay(STEP_MS) : Promise.resolve(),
+        ]);
+        if (!response.ok) throw new Error(String(response.status));
 
-      // Signature moment (Section 7): the new pin lands with one ring ping.
-      setPingTicketId(data.ticket.id);
-      if (pingTimer.current) clearTimeout(pingTimer.current);
-      pingTimer.current = setTimeout(() => setPingTicketId(null), PING_MS);
+        const data = (await response.json()) as {
+          ticket: Ticket;
+          droneWaypointIndex: number;
+        };
+        if (!aliveRef.current) return;
+
+        addTicket(data.ticket);
+        setDroneWaypointIndex(data.droneWaypointIndex);
+        // Signature moment (Section 7): one ring on the newest pin. Rolling
+        // rather than cumulative — nine rings at once would be noise.
+        setPingTicketId(data.ticket.id);
+        setProgress(step + 1);
+      }
+
+      pingTimer.current = setTimeout(() => {
+        if (aliveRef.current) setPingTicketId(null);
+      }, PING_MS);
     } catch {
-      setError("Scan failed — check the server logs.");
+      if (aliveRef.current) setError("Analysis failed — check the server logs.");
     } finally {
-      setScanning(false);
+      if (aliveRef.current) setScanning(false);
     }
   }, [addTicket]);
 
@@ -116,7 +152,7 @@ export default function MapPage() {
       )}
 
       {/* Sits above the mobile tab bar, and slides clear of the desktop panel
-          so Trigger Scan is never buried. */}
+          so the control is never buried. */}
       <div
         className={`absolute inset-x-4 bottom-4 z-[1000] transition-[right,opacity] duration-300 sm:inset-x-auto ${
           selected
@@ -124,7 +160,12 @@ export default function MapPage() {
             : "sm:right-6"
         }`}
       >
-        <TriggerScanButton onClick={triggerScan} busy={scanning} />
+        <TriggerAnalysisButton
+          onClick={runAnalysis}
+          busy={scanning}
+          done={progress}
+          total={SWEEP_POINTS}
+        />
       </div>
 
       <TicketPanel

@@ -1,4 +1,4 @@
-# FarmSentry
+# CropIQ
 
 AI-powered crop disease triage for NZ growers. Simulated drone scans flag problems on a map, an AI suggests a diagnosis and treatment, the farmer approves or edits, and it becomes a to-do list.
 

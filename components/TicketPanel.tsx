@@ -1,27 +1,35 @@
 "use client";
 
-// LANE Y — PROJECT_SPEC.md Section 9, tasks 1 and 2.
+// The one detail view, shared by the map, AI Insights, To-do and Archive.
 //
 // A side panel, deliberately NOT a modal: no scrim, nothing covering the map,
-// so the pin and its ticket stay spatially connected (Section 7).
+// so the pin and its ticket stay spatially connected (Spec Section 7). On a
+// phone it becomes a bottom sheet, which is where a thumb expects it.
 //
-// Lane X integration contract (Section 8 handoff):
-//   <TicketPanel ticket={selected} onClose={...} onUpdated={...} />
-// `ticket` may be null — the panel slides itself out and keeps rendering the
-// last ticket until the animation finishes, so it is safe to leave mounted.
+// The actions are derived from the ticket's own status rather than passed in,
+// so every caller gets the right verbs without having to know the workflow:
+//   new                  -> Approve / Edit / Discard      (AI Insights)
+//   approved | edited    -> Mark done / Discard           (To-do)
+//   completed | rejected -> read-only + Reopen            (Archive)
+//
+// Integration contract: <TicketPanel ticket={t} onClose={...} onUpdated={...} />
+// `ticket` may be null — leave it mounted and pass null to slide it out.
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BUCKET_META,
   CROP_LABEL,
   SEVERITY_ACCENT,
   STATUS_META,
+  bucketFor,
   formatClock,
   formatConfidence,
   formatCoords,
   formatRelative,
   isHealthy,
   severityFor,
+  stageFor,
   treatmentFor,
 } from "@/components/ticketMeta";
 import { patchTicket } from "@/components/useTickets";
@@ -34,8 +42,7 @@ export interface TicketPanelProps {
   onUpdated?: (ticket: Ticket) => void;
 }
 
-type Mode = "idle" | "edit" | "reject";
-type Assignee = "farmer" | "drone";
+type Mode = "idle" | "edit" | "discard";
 
 const FIELD_LABEL =
   "font-mono text-[10px] uppercase tracking-[0.18em] text-tertiary";
@@ -48,8 +55,6 @@ export default function TicketPanel({
   // Retained so the panel still has content to render while it slides out.
   const [shown, setShown] = useState<Ticket | null>(ticket);
   const [mode, setMode] = useState<Mode>("idle");
-  // null = "follow the ticket"; set only once the farmer picks a different owner.
-  const [assigneeOverride, setAssigneeOverride] = useState<Assignee | null>(null);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,14 +64,12 @@ export default function TicketPanel({
   const ticketId = ticket?.id ?? null;
   // Derived synchronously, never from requestAnimationFrame: a backgrounded or
   // non-compositing tab never fires rAF, and the panel must not depend on that
-  // to become visible. The slide comes from the CSS transition, which needs the
-  // panel left mounted with a null ticket — see the contract note above.
+  // to become visible.
   const open = ticket !== null;
 
   // Adjust state while rendering rather than in an effect — the pattern
-  // react.dev recommends for "reset when a prop changes", and it avoids the
-  // extra commit an effect would cost. Compared on primitives, never on object
-  // identity, so a caller that rebuilds the ticket each render cannot loop us.
+  // react.dev recommends for "reset when a prop changes". Compared on
+  // primitives, so a caller that rebuilds the ticket each render cannot loop us.
   const signature = ticket ? `${ticket.id}:${ticket.updatedAt}` : null;
   const [syncedSignature, setSyncedSignature] = useState(signature);
 
@@ -76,13 +79,11 @@ export default function TicketPanel({
       const switched = ticket.id !== shown?.id;
       setShown(ticket);
       if (switched) {
-        // A different ticket is a clean slate.
         setMode("idle");
         setNotes("");
         setError(null);
         setConfirmed(null);
         setPending(null);
-        setAssigneeOverride(null);
       }
     }
   }
@@ -127,25 +128,20 @@ export default function TicketPanel({
   if (!shown) return null;
 
   const healthy = isHealthy(shown);
-  const severity = severityFor(shown);
-  const accent = SEVERITY_ACCENT[severity];
+  const accent = SEVERITY_ACCENT[severityFor(shown)];
+  const bucket = BUCKET_META[bucketFor(shown)];
   const status = STATUS_META[shown.status];
   const treatment = treatmentFor(shown);
+  const stage = stageFor(shown);
   const busy = pending !== null;
-  // Reflects whoever already owns the ticket, so re-approving never silently
-  // reassigns a drone task back to the farmer.
-  const assignee: Assignee =
-    assigneeOverride ?? (shown.assignedTo === "drone" ? "drone" : "farmer");
-  const accepted = shown.status === "approved" || shown.status === "edited";
 
   return (
     <aside
       aria-label={`Ticket ${shown.id}`}
       aria-hidden={!open}
       className={[
-        // Phone: a bottom sheet rising to 88% of the viewport, which is where a
-        // thumb expects it. Tablet and up: the side panel Section 7 asks for,
-        // so the pin stays visible beside its ticket.
+        // Phone: a bottom sheet rising to 88% of the viewport. Tablet and up:
+        // the side panel Section 7 asks for, so the pin stays visible beside it.
         "fixed z-[1200] flex flex-col bg-raised",
         "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-sheet border-t border-hairline",
         "shadow-[0_-16px_48px_-16px_rgba(0,0,0,0.35)]",
@@ -163,24 +159,23 @@ export default function TicketPanel({
         <span className="h-1 w-9 rounded-full bg-hairline-strong" />
       </div>
 
-      {/* Header — ticket ID in Plex Mono, Section 7 */}
       <header className="flex items-center gap-3 border-b border-hairline px-5 py-3.5">
         <span className="font-mono text-xs tracking-[0.14em] text-secondary">
           {shown.id.toUpperCase()}
         </span>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset ${status.pill}`}
+          className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset ${status.pill}`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+          <span className={`size-1.5 rounded-full ${status.dot}`} />
           {status.label}
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close ticket panel"
-          className="ml-auto grid h-8 w-8 place-items-center rounded-[3px] text-secondary transition-colors hover:bg-sunken hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="focus-ring ml-auto grid size-8 place-items-center rounded-pill text-secondary transition-colors hover:bg-sunken hover:text-primary"
         >
-          <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+          <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
             <path
               d="M4 4l8 8M12 4l-8 8"
               stroke="currentColor"
@@ -192,11 +187,10 @@ export default function TicketPanel({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* Scan frame + telemetry caption */}
-        <figure className="border-b border-hairline">
+        {/* Scan frame. The severity chip rides on the image so the verdict is
+            legible before the farmer has read a single word. */}
+        <figure className="relative border-b border-hairline">
           <div className="relative aspect-[4/3] w-full bg-sunken">
-            {/* unoptimized: the demo images are SVG placeholders today and real
-                PlantVillage rasters after Lane Z's swap — this works for both. */}
             <Image
               src={shown.imageUrl}
               alt={`${CROP_LABEL[shown.cropType]} scan for ticket ${shown.id}`}
@@ -208,6 +202,10 @@ export default function TicketPanel({
               sizes="(max-width: 27rem) 100vw, 27rem"
               className="object-cover"
             />
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-pill bg-black/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
+              <span className={`size-1.5 rounded-full ${bucket.dot}`} />
+              {bucket.label}
+            </span>
           </div>
           <figcaption className="flex items-center justify-between gap-3 px-5 py-2 font-mono text-[11px] text-secondary">
             <span>{formatCoords(shown.lat, shown.lng)}</span>
@@ -218,34 +216,32 @@ export default function TicketPanel({
         </figure>
 
         <div className="space-y-6 px-5 py-5">
-          {/* Diagnosis */}
+          {/* The verdict, given the space it deserves. */}
           <section>
             <p className={FIELD_LABEL}>
               {CROP_LABEL[shown.cropType]} · AI diagnosis
             </p>
             <h2
-              className={`mt-1.5 text-[1.4rem] leading-tight font-semibold ${
-                healthy ? "text-accent" : accent.text
+              className={`mt-2 text-[26px] font-semibold leading-[1.15] tracking-[-0.01em] ${
+                healthy ? "text-status-ok" : accent.text
               }`}
             >
               {shown.diagnosis.condition}
             </h2>
 
-            <div className="mt-4">
-              <div className="flex items-baseline justify-between">
-                <span className={FIELD_LABEL}>Confidence</span>
-                <span className="font-mono text-sm text-primary">
-                  {formatConfidence(shown.diagnosis.confidence)}
-                </span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-sunken">
+            <div className="mt-3.5 flex items-center gap-3">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-pill bg-sunken">
                 <div
-                  className={`h-full rounded-full ${healthy ? "bg-accent" : accent.bar}`}
+                  className={`h-full rounded-pill ${healthy ? "bg-status-ok" : accent.bar}`}
                   style={{
                     width: `${Math.round(shown.diagnosis.confidence * 100)}%`,
                   }}
                 />
               </div>
+              <span className="font-mono text-sm tabular-nums text-primary">
+                {formatConfidence(shown.diagnosis.confidence)}
+              </span>
+              <span className="text-[11px] text-tertiary">confidence</span>
             </div>
           </section>
 
@@ -258,17 +254,16 @@ export default function TicketPanel({
             </section>
           )}
 
-          {/* Suggested treatment */}
           <section>
-            <p className={FIELD_LABEL}>Suggested treatment</p>
-            <div
-              className={`mt-1.5 border-l-2 bg-sunken[0.03] px-4 py-3 ${accent.rule}`}
-            >
+            <p className={FIELD_LABEL}>
+              {healthy ? "Recommendation" : "Suggested treatment"}
+            </p>
+            <div className={`mt-1.5 border-l-2 bg-sunken px-4 py-3 ${accent.rule}`}>
               <p className="text-sm leading-relaxed text-primary">
                 {shown.diagnosis.suggestedTreatment}
               </p>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-secondary">
+            <p className="mt-2 text-[11px] leading-relaxed text-tertiary">
               Triage guidance for a grower to verify — not a registered chemical
               prescription.
             </p>
@@ -276,8 +271,8 @@ export default function TicketPanel({
 
           {shown.farmerNotes && (
             <section>
-              <p className={FIELD_LABEL}>Farmer notes</p>
-              <p className="mt-1.5 border-l-2 border-status-muted/40 bg-status-muted/[0.05] px-4 py-3 text-sm leading-relaxed text-primary">
+              <p className={FIELD_LABEL}>Your notes</p>
+              <p className="mt-1.5 border-l-2 border-status-muted/40 bg-sunken px-4 py-3 text-sm leading-relaxed text-primary">
                 {shown.farmerNotes}
               </p>
             </section>
@@ -285,9 +280,8 @@ export default function TicketPanel({
         </div>
       </div>
 
-      {/* Action bar */}
-      <footer className="border-t border-hairline bg-raised px-5 py-4">
-        {confirmed && <ConfirmationStrip status={confirmed} healthy={healthy} />}
+      <footer className="border-t border-hairline bg-raised px-5 py-4 pb-safe">
+        {confirmed && <ConfirmationStrip status={confirmed} />}
 
         {error && (
           <p
@@ -298,57 +292,7 @@ export default function TicketPanel({
           </p>
         )}
 
-        {mode === "idle" ? (
-          <>
-            {!healthy && (
-              <AssigneeToggle value={assignee} onChange={setAssigneeOverride} />
-            )}
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  act("approve", {
-                    status: "approved",
-                    assignedTo: healthy ? null : assignee,
-                  })
-                }
-                className="flex-1 rounded-[3px] bg-accent px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-on-accent transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-55"
-              >
-                {pending === "approve"
-                  ? "Saving…"
-                  : healthy
-                    ? "Confirm — no action"
-                    : accepted
-                      ? "Update"
-                      : "Approve"}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setNotes(shown.farmerNotes ?? "");
-                  setMode("edit");
-                }}
-                className="rounded-[3px] border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-primary transition-colors hover:border-hairline hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-55"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setNotes("");
-                  setMode("reject");
-                }}
-                className="rounded-[3px] border border-status-alert/35 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-status-alert transition-colors hover:border-status-alert/60 hover:bg-status-alert/6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-alert disabled:opacity-55"
-              >
-                Reject
-              </button>
-            </div>
-          </>
-        ) : (
+        {mode !== "idle" ? (
           <NotesForm
             mode={mode}
             notes={notes}
@@ -363,83 +307,155 @@ export default function TicketPanel({
               act(
                 mode,
                 mode === "edit"
-                  ? {
-                      status: "edited",
-                      farmerNotes: notes.trim(),
-                      assignedTo: healthy ? null : assignee,
-                    }
-                  : {
-                      status: "rejected",
-                      farmerNotes: notes.trim(),
-                      assignedTo: null,
-                    },
+                  ? { status: "edited", farmerNotes: notes.trim() }
+                  : { status: "rejected", farmerNotes: notes.trim() },
               )
             }
           />
+        ) : stage === "triage" ? (
+          <div className="flex gap-2">
+            <PrimaryButton
+              busy={pending === "approve"}
+              disabled={busy}
+              onClick={() =>
+                // "All good" needs no work, so acknowledging files it straight
+                // to the archive instead of parking it on the to-do list.
+                act("approve", { status: healthy ? "completed" : "approved" })
+              }
+            >
+              {healthy ? "Acknowledge" : "Approve"}
+            </PrimaryButton>
+            <GhostButton
+              disabled={busy}
+              onClick={() => {
+                setNotes(shown.farmerNotes ?? "");
+                setMode("edit");
+              }}
+            >
+              Edit
+            </GhostButton>
+            <DangerButton
+              disabled={busy}
+              onClick={() => {
+                setNotes("");
+                setMode("discard");
+              }}
+            >
+              Discard
+            </DangerButton>
+          </div>
+        ) : stage === "task" ? (
+          <div className="flex gap-2">
+            <PrimaryButton
+              busy={pending === "done"}
+              disabled={busy}
+              onClick={() => act("done", { status: "completed" })}
+            >
+              Mark done
+            </PrimaryButton>
+            <DangerButton
+              disabled={busy}
+              onClick={() => {
+                setNotes("");
+                setMode("discard");
+              }}
+            >
+              Discard
+            </DangerButton>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <p className="flex-1 text-[12px] leading-relaxed text-tertiary">
+              {shown.status === "completed"
+                ? "Completed and archived."
+                : "Discarded and archived."}
+            </p>
+            <GhostButton
+              disabled={busy}
+              onClick={() =>
+                // Completed work goes back to the to-do list; something you
+                // discarded goes back to triage to be judged again.
+                act("reopen", {
+                  status: shown.status === "completed" ? "approved" : "new",
+                })
+              }
+            >
+              {pending === "reopen" ? "…" : "Reopen"}
+            </GhostButton>
+          </div>
         )}
       </footer>
     </aside>
   );
 }
 
-/** Section 9 task 3 — the drone route exists, and is honest about being roadmap. */
-function AssigneeToggle({
-  value,
-  onChange,
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+const BUTTON_BASE =
+  "focus-ring rounded-pill px-4 py-2.5 text-[13px] font-semibold transition-[transform,opacity,background-color] duration-150 active:scale-[0.97] disabled:opacity-50";
+
+function PrimaryButton({
+  children,
+  busy,
+  disabled,
+  onClick,
 }: {
-  value: Assignee;
-  onChange: (next: Assignee) => void;
+  children: React.ReactNode;
+  busy?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
-  const option =
-    "flex-1 rounded-[2px] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors";
   return (
-    <div className="mb-3">
-      <div className="flex items-center justify-between">
-        <span className={FIELD_LABEL}>Assign to</span>
-      </div>
-      <div className="mt-1.5 flex gap-1 rounded-[3px] border border-hairline bg-sunken[0.03] p-1">
-        <button
-          type="button"
-          onClick={() => onChange("farmer")}
-          aria-pressed={value === "farmer"}
-          className={`${option} ${
-            value === "farmer"
-              ? "bg-accent text-on-accent"
-              : "text-secondary hover:text-primary"
-          }`}
-        >
-          Me
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange("drone")}
-          aria-pressed={value === "drone"}
-          className={`${option} flex items-center justify-center gap-1.5 ${
-            value === "drone"
-              ? "bg-status-muted text-on-accent"
-              : "text-secondary hover:text-primary"
-          }`}
-        >
-          Drone
-          <span
-            className={`rounded-[2px] px-1 py-px text-[9px] tracking-[0.1em] ${
-              value === "drone"
-                ? "bg-white/25 text-on-accent"
-                : "bg-status-muted/15 text-status-muted"
-            }`}
-          >
-            Roadmap
-          </span>
-        </button>
-      </div>
-      {value === "drone" && (
-        <p className="mt-2 text-[11px] leading-relaxed text-secondary">
-          Queued only. CAA Part 102 requires a supervising observer for any
-          agrichemical flight — we automate the scheduling and detection, not the
-          legal oversight.
-        </p>
-      )}
-    </div>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`${BUTTON_BASE} flex-1 bg-accent text-on-accent hover:opacity-90`}
+    >
+      {busy ? "Saving…" : children}
+    </button>
+  );
+}
+
+function GhostButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`${BUTTON_BASE} border border-hairline text-primary hover:bg-sunken`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function DangerButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`${BUTTON_BASE} border border-status-alert/35 text-status-alert hover:bg-status-alert/10`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -464,7 +480,7 @@ function NotesForm({
   return (
     <div>
       <label className={FIELD_LABEL} htmlFor="farmer-notes">
-        {editing ? "Your correction" : "Why are you rejecting this?"}
+        {editing ? "Your correction" : "Why are you discarding this?"}
       </label>
       <textarea
         id="farmer-notes"
@@ -477,7 +493,7 @@ function NotesForm({
             ? "It's leafroll virus, not black rot — treat block 4 first."
             : "Already sprayed last week."
         }
-        className="mt-1.5 w-full resize-none rounded-[3px] border border-hairline bg-raised px-3 py-2 text-sm leading-relaxed text-primary placeholder:text-tertiary focus:border-accent focus:outline-none"
+        className="focus-ring mt-1.5 w-full resize-none rounded-card border border-hairline bg-canvas px-3 py-2.5 text-sm leading-relaxed text-primary placeholder:text-tertiary"
       />
       <p className="mt-1.5 text-[11px] text-tertiary">
         Logged for the next training run — the model does not learn in real time.
@@ -487,63 +503,48 @@ function NotesForm({
           type="button"
           disabled={busy || notes.trim().length === 0}
           onClick={onSubmit}
-          className={`flex-1 rounded-[3px] px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-on-accent transition-colors disabled:opacity-45 ${
-            editing
-              ? "bg-status-muted hover:bg-status-muted/85"
-              : "bg-status-alert hover:bg-status-alert/85"
+          className={`${BUTTON_BASE} flex-1 text-on-accent ${
+            editing ? "bg-accent hover:opacity-90" : "bg-status-alert hover:opacity-90"
           }`}
         >
-          {busy ? "Saving…" : editing ? "Save correction" : "Confirm reject"}
+          {busy ? "Saving…" : editing ? "Save correction" : "Confirm discard"}
         </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onCancel}
-          className="rounded-[3px] border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-secondary transition-colors hover:bg-sunken disabled:opacity-55"
-        >
+        <GhostButton disabled={busy} onClick={onCancel}>
           Cancel
-        </button>
+        </GhostButton>
       </div>
     </div>
   );
 }
 
 /** Tells the farmer where the ticket just went — no guessing on stage. */
-function ConfirmationStrip({
-  status,
-  healthy,
-}: {
-  status: Ticket["status"];
-  healthy: boolean;
-}) {
-  const message =
-    status === "rejected"
-      ? "Dismissed. Logged for the next training run."
-      : healthy
-        ? "Confirmed — no action needed. Counted in insights."
-        : status === "edited"
-          ? "Correction saved — on your to-do list."
-          : status === "completed"
-            ? "Marked complete."
-            : "Approved — on your to-do list.";
-
-  const dismissed = status === "rejected";
+function ConfirmationStrip({ status }: { status: Ticket["status"] }) {
+  const map: Record<Ticket["status"], { text: string; href?: string; cta?: string }> =
+    {
+      new: { text: "Back in AI Insights for review.", href: "/ai-insights", cta: "Insights" },
+      approved: { text: "Approved — added to your to-do list.", href: "/todo", cta: "To-do" },
+      edited: { text: "Correction saved — added to your to-do list.", href: "/todo", cta: "To-do" },
+      completed: { text: "Done. Filed in the archive.", href: "/archive", cta: "Archive" },
+      rejected: { text: "Discarded. Filed in the archive.", href: "/archive", cta: "Archive" },
+    };
+  const { text, href, cta } = map[status];
+  const muted = status === "rejected";
 
   return (
     <div
-      className={`mb-3 flex items-center gap-2 border-l-2 px-3 py-2 text-[12px] ${
-        dismissed
-          ? "border-hairline bg-sunken[0.04] text-secondary"
-          : "border-accent bg-accent/[0.07] text-secondary"
+      className={`mb-3 flex items-center gap-2 rounded-card border-l-2 px-3 py-2 text-[12px] ${
+        muted
+          ? "border-status-muted bg-sunken text-secondary"
+          : "border-status-ok bg-status-ok/10 text-status-ok"
       }`}
     >
-      <span className="flex-1">{message}</span>
-      {!dismissed && !healthy && (
+      <span className="flex-1">{text}</span>
+      {href && (
         <a
-          href="/todo"
-          className="font-mono text-[10px] uppercase tracking-[0.14em] underline underline-offset-2 hover:text-primary"
+          href={href}
+          className="focus-ring rounded-pill font-mono text-[10px] uppercase tracking-[0.14em] underline underline-offset-2"
         >
-          To-do
+          {cta}
         </a>
       )}
     </div>

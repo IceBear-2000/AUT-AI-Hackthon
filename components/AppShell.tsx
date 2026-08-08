@@ -20,6 +20,8 @@ import type { Ticket } from "@/lib/types";
 type Tab = {
   href: string;
   label: string;
+  /** The phone tab bar carries five items, so long names get a short form. */
+  short?: string;
   icon: React.ReactNode;
   badge?: (tickets: Ticket[]) => number;
 };
@@ -28,7 +30,6 @@ const TABS: Tab[] = [
   {
     href: "/map",
     label: "Map",
-    badge: (tickets) => tickets.filter((t) => t.status === "new").length,
     icon: (
       <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
         <path
@@ -39,6 +40,28 @@ const TABS: Tab[] = [
           strokeLinejoin="round"
         />
         <circle cx="12" cy="10" r="2.6" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    href: "/ai-insights",
+    label: "AI Insights",
+    short: "Insights",
+    // Untriaged findings are the one thing the farmer is actually behind on.
+    badge: (tickets) => tickets.filter((t) => t.status === "new").length,
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+        <path
+          d="M12 3.5 13.6 8.4 18.5 10 13.6 11.6 12 16.5 10.4 11.6 5.5 10 10.4 8.4Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M18 16.5 18.7 18.3 20.5 19 18.7 19.7 18 21.5 17.3 19.7 15.5 19 17.3 18.3Z"
+          fill="currentColor"
+        />
       </svg>
     ),
   },
@@ -66,8 +89,33 @@ const TABS: Tab[] = [
     ),
   },
   {
-    href: "/insights",
-    label: "Insights",
+    href: "/archive",
+    label: "Archive",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+        <path
+          d="M3.5 7.5h17M5 7.5v11a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-11"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M4.5 4h15a1 1 0 0 1 1 1v2.5h-17V5a1 1 0 0 1 1-1ZM10 12h4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/stats",
+    label: "Statistics",
+    short: "Stats",
     icon: (
       <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
         <path
@@ -91,7 +139,7 @@ function StatusPills({ tickets }: { tickets: Ticket[] }) {
       color: "var(--status-new)",
     },
     {
-      label: "Approved",
+      label: "To-do",
       value: tickets.filter(isActionable).length,
       color: "var(--status-ok)",
     },
@@ -144,7 +192,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             href="/map"
             className="focus-ring rounded-md font-mono text-[11px] tracking-[0.16em] text-primary sm:text-xs"
           >
-            FARMSENTRY
+            CROPIQ
             <span className="text-tertiary">{" // "}</span>
             <span className="text-secondary">RENWICK-01</span>
           </Link>
@@ -172,6 +220,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2.5">
             <StatusPills tickets={tickets} />
+            {/* Live model showcase. Reachable from every screen, but kept out
+                of the tab bar — it proves the model, it isn't farm work. */}
+            <Link
+              href="/scan"
+              aria-label="Test the AI model with a camera"
+              title="Test AI model"
+              className="focus-ring grid size-8 place-items-center rounded-pill border border-hairline bg-sunken text-secondary transition-colors hover:text-primary"
+            >
+              <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+                <path
+                  d="M4 8.5h3.2l1.4-2h6.8l1.4 2H20a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="13.5"
+                  r="3.1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+              </svg>
+            </Link>
             <ThemeToggle />
           </div>
         </div>
@@ -193,7 +267,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`focus-ring relative flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors ${
+                className={`focus-ring relative flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${
                   active ? "text-accent" : "text-tertiary"
                 }`}
               >
@@ -201,7 +275,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   {tab.icon}
                   <Badge count={count} />
                 </span>
-                <span className="text-[11px] font-medium">{tab.label}</span>
+                <span className="w-full truncate px-0.5 text-center text-[10px] font-medium">
+                  {tab.short ?? tab.label}
+                </span>
               </Link>
             );
           })}
