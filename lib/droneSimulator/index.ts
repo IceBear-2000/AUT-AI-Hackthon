@@ -22,31 +22,60 @@ function cropForWaypoint(index: number): CropType {
   return index < 6 ? "grape" : "apple";
 }
 
+// Real PlantVillage photos, 5 per class. Interleaved by condition rather than
+// grouped, because pick() walks these in order — grouped, five straight scans
+// would all be black rot; interleaved, each one surfaces a different disease.
 const DISEASED_IMAGES: Record<CropType, string[]> = {
   grape: [
-    "/sample-images/grape-black-rot-01.svg",
-    "/sample-images/grape-black-rot-02.svg",
-    "/sample-images/grape-esca-01.svg",
-    "/sample-images/grape-leaf-blight-01.svg",
+    "/sample-images/grape-black-rot-01.jpg",
+    "/sample-images/grape-esca-01.jpg",
+    "/sample-images/grape-leaf-blight-01.jpg",
+    "/sample-images/grape-black-rot-02.jpg",
+    "/sample-images/grape-esca-02.jpg",
+    "/sample-images/grape-leaf-blight-02.jpg",
+    "/sample-images/grape-black-rot-03.jpg",
+    "/sample-images/grape-esca-03.jpg",
+    "/sample-images/grape-leaf-blight-03.jpg",
+    "/sample-images/grape-black-rot-04.jpg",
+    "/sample-images/grape-esca-04.jpg",
+    "/sample-images/grape-leaf-blight-04.jpg",
+    "/sample-images/grape-black-rot-05.jpg",
+    "/sample-images/grape-esca-05.jpg",
+    "/sample-images/grape-leaf-blight-05.jpg",
   ],
   apple: [
-    "/sample-images/apple-scab-01.svg",
-    "/sample-images/apple-scab-02.svg",
-    "/sample-images/apple-black-rot-01.svg",
-    "/sample-images/apple-cedar-rust-01.svg",
+    "/sample-images/apple-scab-01.jpg",
+    "/sample-images/apple-black-rot-01.jpg",
+    "/sample-images/apple-cedar-rust-01.jpg",
+    "/sample-images/apple-scab-02.jpg",
+    "/sample-images/apple-black-rot-02.jpg",
+    "/sample-images/apple-cedar-rust-02.jpg",
+    "/sample-images/apple-scab-03.jpg",
+    "/sample-images/apple-black-rot-03.jpg",
+    "/sample-images/apple-cedar-rust-03.jpg",
+    "/sample-images/apple-scab-04.jpg",
+    "/sample-images/apple-black-rot-04.jpg",
+    "/sample-images/apple-cedar-rust-04.jpg",
+    "/sample-images/apple-scab-05.jpg",
+    "/sample-images/apple-black-rot-05.jpg",
+    "/sample-images/apple-cedar-rust-05.jpg",
   ],
 };
 
 const HEALTHY_IMAGES: Record<CropType, string[]> = {
   grape: [
-    "/sample-images/grape-healthy-01.svg",
-    "/sample-images/grape-healthy-02.svg",
-    "/sample-images/grape-healthy-03.svg",
+    "/sample-images/grape-healthy-01.jpg",
+    "/sample-images/grape-healthy-02.jpg",
+    "/sample-images/grape-healthy-03.jpg",
+    "/sample-images/grape-healthy-04.jpg",
+    "/sample-images/grape-healthy-05.jpg",
   ],
   apple: [
-    "/sample-images/apple-healthy-01.svg",
-    "/sample-images/apple-healthy-02.svg",
-    "/sample-images/apple-healthy-03.svg",
+    "/sample-images/apple-healthy-01.jpg",
+    "/sample-images/apple-healthy-02.jpg",
+    "/sample-images/apple-healthy-03.jpg",
+    "/sample-images/apple-healthy-04.jpg",
+    "/sample-images/apple-healthy-05.jpg",
   ],
 };
 

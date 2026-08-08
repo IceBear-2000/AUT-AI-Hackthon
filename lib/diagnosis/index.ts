@@ -7,8 +7,8 @@ import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import type { CropType, Diagnosis } from "@/lib/types";
 import treatments from "@/lib/treatments.json";
-// Pre-computed results for every demo image (Spec Section 8 task 3 / Section 11).
-// Lane Z: refresh this after swapping in real PlantVillage images.
+// Pre-computed results for every demo image (Spec Section 10 task 4 / Section 11).
+// Regenerate with `npx tsx lib/diagnosis/verify.ts --write` after changing images.
 import cache from "./cache.json";
 
 const MODEL = "claude-sonnet-5";
@@ -26,11 +26,13 @@ export function conditionsFor(cropType: CropType): string[] {
   return Object.keys(library[cropType]);
 }
 
-/** Display label: "Healthy" stays bare, everything else gets crop-prefixed once. */
+/** Display label: "Healthy" stays bare, everything else gets crop-prefixed once.
+ *  Matches the crop name anywhere, not just at the start — otherwise
+ *  "Cedar Apple Rust" comes out as "Apple Cedar Apple Rust". */
 export function label(cropType: CropType, condition: string): string {
   if (condition === "Healthy") return "Healthy";
   const crop = cropType === "grape" ? "Grape" : "Apple";
-  return condition.startsWith(crop) ? condition : `${crop} ${condition}`;
+  return condition.includes(crop) ? condition : `${crop} ${condition}`;
 }
 
 /**
@@ -50,15 +52,25 @@ function buildDiagnosis(
   };
 }
 
+// The API takes raster formats only. The placeholder SVGs are gone, but this
+// keeps an unsupported file from turning into an opaque 400 mid-demo.
+const MEDIA_TYPES: Record<string, "image/jpeg" | "image/png" | "image/webp"> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+
 async function imageToBase64(
   imageUrl: string,
-): Promise<{ data: string; mediaType: string }> {
-  // imageUrl is a public/ path such as "/sample-images/grape-black-rot-01.svg"
+): Promise<{ data: string; mediaType: "image/jpeg" | "image/png" | "image/webp" }> {
+  // imageUrl is a public/ path such as "/sample-images/grape-black-rot-01.jpg"
   const filePath = path.join(process.cwd(), "public", imageUrl);
+  const mediaType = MEDIA_TYPES[path.extname(filePath).toLowerCase()];
+  if (!mediaType) {
+    throw new Error(`unsupported image format: ${imageUrl}`);
+  }
   const buffer = await readFile(filePath);
-  const ext = path.extname(filePath).toLowerCase();
-  const mediaType =
-    ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
   return { data: buffer.toString("base64"), mediaType };
 }
 
@@ -68,11 +80,6 @@ async function callModel(
 ): Promise<Diagnosis> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
-  // The shipped sample images are SVG placeholders; the API only takes raster
-  // formats. Lane Z: drop real PlantVillage .jpg files in and this goes live.
-  if (imageUrl.endsWith(".svg")) {
-    throw new Error("placeholder SVG — swap in real PlantVillage images");
-  }
 
   const { data, mediaType } = await imageToBase64(imageUrl);
   const allowed = conditionsFor(cropType);
@@ -119,12 +126,26 @@ async function callModel(
   const json = text.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
   const parsed = JSON.parse(json) as { condition?: string; confidence?: number };
 
-  const condition =
-    parsed.condition && allowed.includes(parsed.condition)
-      ? parsed.condition
-      : "Healthy";
+  // Deliberately throw rather than defaulting to "Healthy". On a disease-triage
+  // tool, silently turning an unreadable response into "no disease" is the one
+  // failure direction that loses a crop — better to fall back to the cached
+  // answer for this exact image, which diagnose() does on any throw.
+  if (!parsed.condition || !allowed.includes(parsed.condition)) {
+    throw new Error(`unrecognised condition from model: ${text.slice(0, 120)}`);
+  }
 
-  return buildDiagnosis(cropType, condition, parsed.confidence ?? 0.5);
+  return buildDiagnosis(cropType, parsed.condition, parsed.confidence ?? 0.5);
+}
+
+/**
+ * The same live call, with no timeout and no cache fallback — so the Section 10
+ * task 3 verification measures the model, not the safety net. Not used at runtime.
+ */
+export async function diagnoseLive(
+  imageUrl: string,
+  cropType: CropType,
+): Promise<Diagnosis> {
+  return callModel(imageUrl, cropType);
 }
 
 /**

@@ -26,7 +26,7 @@ Open http://localhost:3000. No API key? It still runs — `diagnose()` falls bac
 | `lib/seed.ts` | 7 pre-seeded tickets so the map isn't empty on stage |
 | `app/api/` | The three endpoints below |
 | `app/globals.css` | Spec Section 7 palette, IBM Plex, ping keyframes |
-| `public/sample-images/` | 14 **placeholder** SVGs — Lane Z swaps in real PlantVillage images |
+| `public/sample-images/` | 40 real PlantVillage photos, 5 each across 8 classes (Lane Z) |
 
 ## API
 
