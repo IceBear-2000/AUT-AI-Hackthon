@@ -142,11 +142,38 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4">
           <Link
             href="/map"
-            className="focus-ring rounded-md font-mono text-[11px] tracking-[0.16em] text-primary sm:text-xs"
+            aria-label="CropIQ — Renwick-01"
+            className="focus-ring flex shrink-0 items-center gap-2 rounded-lg"
           >
-            FARMSENTRY
-            <span className="text-tertiary">{" // "}</span>
-            <span className="text-secondary">RENWICK-01</span>
+            <span
+              aria-hidden="true"
+              className="grid size-7 place-items-center rounded-[9px] bg-accent text-on-accent"
+            >
+              {/* Outlined leaf with a midrib — stays legible at 16px, where a
+                  filled glyph collapses into a blob. */}
+              <svg viewBox="0 0 20 20" className="size-4" aria-hidden="true">
+                <path
+                  d="M4.6 15.4c0-6 4.8-10.8 10.8-10.8 0 6-4.8 10.8-10.8 10.8Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M5.6 14.4 13 7"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            {/* Brand keeps its real casing; the site code stays instrument-style. */}
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-primary">
+              CropIQ
+            </span>
+            <span className="font-mono text-[10px] tracking-[0.14em] text-tertiary">
+              {"// RENWICK-01"}
+            </span>
           </Link>
 
           {/* Desktop nav. On phones this is the bottom tab bar instead. */}

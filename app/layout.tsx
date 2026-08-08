@@ -15,7 +15,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FarmSentry — crop disease triage",
+  title: "CropIQ — crop disease triage",
   description:
     "AI-powered crop disease triage for NZ growers. Drone scans flag problems on a map, AI suggests a diagnosis, the farmer approves.",
 };
@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 // Runs before first paint, so a dark-mode user never sees a white flash.
 // Only pins the attribute for an explicit choice — "system" falls through to
 // the prefers-color-scheme rules in globals.css.
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('farmsentry-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('cropiq-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
