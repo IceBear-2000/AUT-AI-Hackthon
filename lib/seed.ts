@@ -31,13 +31,13 @@ const SEEDS: {
   minutesAgo: number;
   status?: "approved" | "completed";
 }[] = [
-  { waypoint: 0, cropType: "grape", condition: "Black Rot", confidence: 0.91, imageUrl: "/sample-images/grape-black-rot-01.svg", minutesAgo: 96 },
-  { waypoint: 1, cropType: "grape", condition: "Healthy", confidence: 0.97, imageUrl: "/sample-images/grape-healthy-01.svg", minutesAgo: 88 },
-  { waypoint: 2, cropType: "grape", condition: "Esca (Black Measles)", confidence: 0.78, imageUrl: "/sample-images/grape-esca-01.svg", minutesAgo: 74, status: "approved" },
-  { waypoint: 3, cropType: "grape", condition: "Healthy", confidence: 0.95, imageUrl: "/sample-images/grape-healthy-02.svg", minutesAgo: 61 },
-  { waypoint: 4, cropType: "grape", condition: "Leaf Blight (Isariopsis Leaf Spot)", confidence: 0.84, imageUrl: "/sample-images/grape-leaf-blight-01.svg", minutesAgo: 47, status: "completed" },
-  { waypoint: 6, cropType: "apple", condition: "Apple Scab", confidence: 0.88, imageUrl: "/sample-images/apple-scab-01.svg", minutesAgo: 33 },
-  { waypoint: 7, cropType: "apple", condition: "Healthy", confidence: 0.96, imageUrl: "/sample-images/apple-healthy-01.svg", minutesAgo: 21 },
+  { waypoint: 0, cropType: "grape", condition: "Black Rot", confidence: 0.91, imageUrl: "/sample-images/grape-black-rot-01.jpg", minutesAgo: 96 },
+  { waypoint: 1, cropType: "grape", condition: "Healthy", confidence: 0.97, imageUrl: "/sample-images/grape-healthy-01.jpg", minutesAgo: 88 },
+  { waypoint: 2, cropType: "grape", condition: "Esca (Black Measles)", confidence: 0.78, imageUrl: "/sample-images/grape-esca-01.jpg", minutesAgo: 74, status: "approved" },
+  { waypoint: 3, cropType: "grape", condition: "Healthy", confidence: 0.95, imageUrl: "/sample-images/grape-healthy-02.jpg", minutesAgo: 61 },
+  { waypoint: 4, cropType: "grape", condition: "Leaf Blight (Isariopsis Leaf Spot)", confidence: 0.84, imageUrl: "/sample-images/grape-leaf-blight-01.jpg", minutesAgo: 47, status: "completed" },
+  { waypoint: 6, cropType: "apple", condition: "Apple Scab", confidence: 0.88, imageUrl: "/sample-images/apple-scab-01.jpg", minutesAgo: 33 },
+  { waypoint: 7, cropType: "apple", condition: "Healthy", confidence: 0.96, imageUrl: "/sample-images/apple-healthy-01.jpg", minutesAgo: 21 },
 ];
 
 export function seedIfEmpty(): void {
