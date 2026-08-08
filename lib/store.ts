@@ -1,4 +1,4 @@
-// TRACK C — storage. In-memory only, per Spec Section 2. No hosted DB tonight.
+// Storage — built. In-memory only, per Spec Section 2. No hosted DB tonight.
 // Stashed on globalThis so Next's dev hot-reload doesn't wipe the tickets mid-demo.
 
 import type { Diagnosis, DroneEvent, Ticket, TicketStatus } from "@/lib/types";

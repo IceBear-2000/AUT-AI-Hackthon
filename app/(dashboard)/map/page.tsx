@@ -1,6 +1,6 @@
-// TRACK B OWNS THIS FILE — replace this placeholder entirely.
+// LANE X OWNS THIS FILE — replace this placeholder entirely.
 // Target: full-bleed Leaflet map, status-coloured pins, "Trigger Scan" button,
-// ticket side panel sliding in from the right. See PROJECT_SPEC.md Sections 7 and 9.
+// drone icon on the waypoint path. See PROJECT_SPEC.md Sections 7 and 8.
 
 const BUILT = [
   ["lib/types.ts", "shared contract — locked, tell the group before editing"],
@@ -14,9 +14,9 @@ const BUILT = [
 ];
 
 const TODO = [
-  ["Track A", "pull real PlantVillage images, re-run the diagnosis tests, refresh cache.json"],
-  ["Track B", "this map view, ticket side panel, to-do list, insights"],
-  ["Track C", "review the API + simulator already scaffolded here, extend as needed"],
+  ["Lane X", "this map view — pins, Trigger Scan, drone + ping animation"],
+  ["Lane Y", "ticket side panel (not a modal), approve/edit/reject, to-do list"],
+  ["Lane Z", "real PlantVillage images, verify the live model, re-record the cache, insights"],
 ];
 
 export default function MapPage() {
@@ -30,7 +30,7 @@ export default function MapPage() {
       </h1>
       <p className="mt-3 max-w-xl text-canopy-700">
         Shared contracts, design tokens and the API plumbing are in. This page is
-        a placeholder — Track B replaces it with the map view.
+        a placeholder — Lane X replaces it with the map view.
       </p>
 
       <section className="mt-10">

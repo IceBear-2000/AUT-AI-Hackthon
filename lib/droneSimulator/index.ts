@@ -1,4 +1,4 @@
-// TRACK C — drone simulator. No real hardware, no real flight (Spec Section 1).
+// Drone simulator — built. No real hardware, no real flight (Spec Section 1).
 
 import type { CropType, DroneEvent } from "@/lib/types";
 

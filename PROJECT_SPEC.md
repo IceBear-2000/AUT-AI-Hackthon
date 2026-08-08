@@ -10,6 +10,40 @@ _(working title — rename freely)_
 
 ---
 
+## 0. Status — read this before anything else
+
+**The scaffold, the shared contracts and the whole backend are already built and pushed to `main`.** Clone, `npm install`, and you can start on your lane immediately. Nobody is blocked on anybody.
+
+### Already done ✅
+
+| Path | What it is |
+| --- | --- |
+| `lib/types.ts` | Shared contract (Section 4). **Frozen** — shout in the chat before editing |
+| `lib/treatments.json` | Section 6 disease + treatment content library |
+| `lib/diagnosis/` | `diagnose(imageUrl, cropType)` — live model call, 3s timeout, cached fallback |
+| `lib/droneSimulator/` | `DEMO_WAYPOINTS` (Renwick) + `getNextEvent()`, ~40/60 disease/healthy, deterministic |
+| `lib/store.ts` | In-memory ticket store |
+| `lib/seed.ts` | 7 pre-seeded tickets so the map isn't empty on stage |
+| `app/api/` | All three endpoints, verified working (Section 10) |
+| `app/globals.css` | Section 7 palette, IBM Plex Sans/Mono, `.pin-ping` keyframes |
+| `public/sample-images/` | 14 **placeholder** SVGs — Lane Z replaces them |
+
+### Left to build — three lanes, one person each
+
+| Lane | Owns | Section |
+| --- | --- | --- |
+| **Lane X** | Map view, pins, Trigger Scan, drone animation | Section 8 |
+| **Lane Y** | Ticket side panel, approve/edit/reject, to-do list | Section 9 |
+| **Lane Z** | Real PlantVillage images, AI verification, insights view | Section 10 |
+
+Say this in the group chat and start: _"X takes the map, Y takes the panel and to-do, Z takes the images and insights."_
+
+### Unassigned, do it in the first 15 minutes
+
+Connect the repo to Vercel so there's always a deployed URL as a safety net (Section 2). Whoever is free.
+
+---
+
 ## 1. Scope
 
 ### Building tonight (MVP)
@@ -38,45 +72,54 @@ _(working title — rename freely)_
 - **Maps:** Leaflet + OpenStreetMap tiles — free, no API key
 - **Hosting:** Vercel — connect the repo in the first 30 minutes so there's always a working deployed URL as a safety net
 
-**Scaffold commands (run once, together, before splitting up):**
+**Getting running — the scaffold is already done, this is all you need:**
 
 ```bash
-npx create-next-app@latest farmsentry --typescript --tailwind --app --eslint
-cd farmsentry
-npm install leaflet react-leaflet
-npm install -D @types/leaflet
+git clone https://github.com/IceBear-2000/AUT-AI-Hackthon.git
+cd AUT-AI-Hackthon
+npm install
+cp .env.example .env.local   # paste the shared ANTHROPIC_API_KEY in
+npm run dev
 ```
 
-**.env.local:**
+Installed already: Next.js 16, React 19, TypeScript, Tailwind v4, `leaflet` + `react-leaflet`, `@anthropic-ai/sdk`.
 
-```
-ANTHROPIC_API_KEY=your_key_here
-# swap for OPENAI_API_KEY if using GPT-4V instead — Track A's choice, document whichever is used
-```
+**No API key?** The app still runs. `diagnose()` falls back to the pre-cached results in `lib/diagnosis/cache.json`, so Lanes X and Y are never blocked waiting on a key.
 
 ---
 
 ## 3. Repo Structure
 
+Every file below is owned by exactly one lane. **Stay in your own rows and you will never hit a merge conflict.**
+
 ```
 /app
   /api
-    /tickets          <- Track C
-    /drone            <- Track C
+    /drone/trigger/route.ts     DONE - frozen
+    /tickets/route.ts           DONE - frozen
+    /tickets/[id]/route.ts      DONE - frozen
   /(dashboard)
-    /map               <- Track B
-    /tickets/[id]       <- Track B
-    /insights           <- Track B
+    /map/page.tsx               <- LANE X  (currently a placeholder, delete it)
+    /todo/page.tsx              <- LANE Y  (create)
+    /insights/page.tsx          <- LANE Z  (create)
+  globals.css                   DONE - shout before editing, it's shared
+  layout.tsx                    DONE - shout before editing, it's shared
+/components                     <- create this folder
+  MapView.tsx                   <- LANE X
+  TriggerScanButton.tsx         <- LANE X
+  TicketPanel.tsx               <- LANE Y
 /lib
-  /diagnosis            <- Track A (single exported function, no dependencies on the other two)
-  /droneSimulator        <- Track C
-  /treatments.json       <- Content library, see Section 6
-  /types.ts             <- SHARED - do not edit without telling the other two
-/data
-  /sample-images         <- PlantVillage grape + apple subset
+  types.ts                      DONE - FROZEN, shout before editing
+  treatments.json               DONE
+  store.ts  seed.ts             DONE - frozen
+  /diagnosis/index.ts           DONE  (Lane Z removes the SVG guard)
+  /diagnosis/cache.json         <- LANE Z re-records
+  /droneSimulator/index.ts      DONE  (Lane Z updates image filenames only)
+/public
+  /sample-images                <- LANE Z replaces all 14 files
 ```
 
-**Git workflow:** with 3 people in clearly separated folders and only a couple hours, skip feature branches and PRs — that's overhead you don't need. Work directly on `main`, commit and push every 15–20 minutes so conflicts stay small, and shout in the group chat before touching `types.ts` or anything outside your own folder.
+**Git workflow:** with 3 people in clearly separated files and only a couple hours, skip feature branches and PRs — that's overhead you don't need. Work directly on `main`. `git pull --rebase` then push every 15–20 minutes so conflicts stay small, and shout in the group chat before touching `lib/types.ts`, `app/globals.css`, `app/layout.tsx`, or anything outside your own lane.
 
 ---
 
@@ -126,11 +169,11 @@ interface Ticket {
 
 ```mermaid
 flowchart LR
-    A[Drone Simulator<br/>Track C] -->|DroneEvent| B[Diagnosis Function<br/>Track A]
-    B -->|Diagnosis| C[Ticket Store / API<br/>Track C]
-    C -->|Ticket list| D[Map + Ticket UI<br/>Track B]
+    A[Drone Simulator<br/>DONE] -->|DroneEvent| B[Diagnosis Function<br/>DONE / Lane Z tunes]
+    B -->|Diagnosis| C[Ticket Store / API<br/>DONE]
+    C -->|Ticket list| D[Map + Ticket UI<br/>Lane X + Lane Y]
     D -->|approve/edit/reject| C
-    C -->|status updates| E[Insights View<br/>Track B]
+    C -->|status updates| E[Insights View<br/>Lane Z]
 ```
 
 ---
@@ -187,61 +230,68 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 
 ---
 
-## 8. TRACK A — AI Diagnosis Layer
+## 8. LANE X — Map & Live Scan
 
 **Owner:** _[fill in]_
-**Goal:** one function. `diagnose(imageUrl: string, cropType: CropType): Promise<Diagnosis>`
+**Owns:** `app/(dashboard)/map/page.tsx`, `components/MapView.tsx`, `components/TriggerScanButton.tsx`
+**Goal:** the screen the judges stare at for the whole demo. Build against Section 7.
 
 **Tasks:**
 
-1. Pull ~15–20 sample images per crop from PlantVillage (grape: black rot, esca, leaf blight, healthy; apple: scab, black rot, cedar apple rust, healthy). Drop into `/data/sample-images`.
-2. Write `diagnose()` in `/lib/diagnosis`. Call a vision-capable model with the image, asking for condition + confidence + a treatment pointer, returned as strict JSON. Cross-reference against Section 6's content library for the treatment text rather than trusting the model's free-form suggestion — more consistent, and matches what's in `treatments.json`.
-3. Pre-compute and cache the diagnosis result for every image that will actually appear in the live demo sequence (see Section 11 — this is your contribution to demo resilience).
-4. Write 3–5 test calls proving `diagnose()` returns sane output for each condition. Keep the logs — useful in the pitch as "here's the model catching X."
+1. **Delete the placeholder** currently in `app/(dashboard)/map/page.tsx` and replace it with a full-bleed Leaflet + OSM map, centred on `DEMO_FARM_CENTER`, zoom ~15.
+2. **Pins** — `GET /api/tickets` on load, one pin per ticket, coloured by status per Section 7 (`veraison` = new, `canopy` = approved/completed, `alert` = disease flagged). Clicking a pin selects that ticket.
+3. **Trigger Scan button** — bottom-right, styled like a physical instrument button, not a generic rounded CTA. `POST /api/drone/trigger` → append the returned ticket → drop its pin. **Manual trigger only, never an automatic timer during a live demo.**
+4. **Signature moment** — the new pin lands with one concentric-ring ping in `--veraison-500`. The `.pin-ping` keyframes are already in `app/globals.css`, just apply the class.
+5. **Drone icon** — sits on `DEMO_WAYPOINTS[droneWaypointIndex]`, which the trigger response already returns. Animate it moving between waypoints.
 
-**Definition of done:** `diagnose()` is a pure function Track C can import and call with zero setup on their end.
+**Handoff to Lane Y:** when a pin is clicked, render `<TicketPanel ticket={selected} onClose={...} onUpdated={...} />`. Until Lane Y pushes that component, stub it with a plain `<div>{ticket.id}</div>` — do not wait.
+
+**Notes:** `react-leaflet` must be client-only — `"use client"` plus `dynamic(() => import(...), { ssr: false })`. Leaflet's default marker icons break under bundlers, so use `CircleMarker` or `L.divIcon`, not the default marker.
+
+**Definition of done:** trigger scan → new pin drops with the ping → clicking any pin fires the selection. Works on a cold reload.
 
 ---
 
-## 9. TRACK B — Frontend / App
+## 9. LANE Y — Ticket Panel & To-Do List
 
 **Owner:** _[fill in]_
-**Goal:** everything the farmer (and the judges) actually see and click. Build against Section 7's design system.
+**Owns:** `components/TicketPanel.tsx`, `app/(dashboard)/todo/page.tsx`
+**Goal:** the approve/act loop — where the farmer is actually in charge, which is the whole pitch.
 
 **Tasks:**
 
-1. **Map view** — Leaflet + OSM tiles, pins colored per Section 7. Clicking a pin opens the side panel (not a modal).
-2. **Drone animation** — icon moving along the Section-13 waypoint path, manual "Trigger Scan" button that fires the next event and animates the ping (Section 7's signature moment). Build the manual trigger first — never depend on an automatic timer during a live demo.
-3. **Ticket side panel** — image, AI diagnosis, confidence, suggested treatment, Approve / Edit / Reject. Rejected/edited tickets let the farmer type a correction.
-4. **To-do list** — approved tickets, grouped by "assigned to farmer" vs "assigned to drone" (drone tasks are visibly roadmap-flagged, not functional). Mark-complete checkbox.
-5. **Insights view** — stat cards + one bar chart per Section 7. Don't overbuild this one.
+1. **Ticket panel** — a **side panel that slides in from the right, not a modal.** Keep the map visible behind it so the pin and its ticket stay spatially connected. Shows the image, condition, confidence and suggested treatment (confidence and ticket ID in Plex Mono).
+2. **Approve / Edit / Reject** — `PATCH /api/tickets/:id` with `{"status": "approved" | "edited" | "rejected"}`. Edit and Reject open a textarea that writes to `farmerNotes` in the same PATCH.
+3. **To-do list** at `/todo` — approved tickets grouped by `assignedTo: "farmer"` vs `assignedTo: "drone"`. The drone group is visibly roadmap-flagged and non-functional — that honesty is a pitch asset, not a weakness (Section 15).
+4. **Mark complete** — checkbox → `PATCH` with `{"status": "completed"}`.
 
-**Definition of done:** trigger scan → pin + ping → open panel → approve → item in to-do list → mark complete → insights update, working end to end, using mock data if Track C isn't ready yet.
+**Start immediately, zero dependencies.** `GET /api/tickets` already returns 7 seeded tickets. Build the panel standalone at `/todo` first; Lane X wires it into the map when both are ready.
+
+**Definition of done:** approve a ticket → it appears in the to-do list → mark it complete → the status survives a page reload.
 
 ---
 
-## 10. TRACK C — Backend / API + Drone Simulator
+## 10. LANE Z — Real Images, AI Verification & Insights
 
 **Owner:** _[fill in]_
-**Goal:** the plumbing that connects A and B.
+**Owns:** `public/sample-images/`, `lib/diagnosis/cache.json`, `app/(dashboard)/insights/page.tsx`
+**Goal:** make the AI claim real, and prove it on screen.
 
 **Tasks:**
 
-1. **Drone simulator** (`/lib/droneSimulator`) — see Section 13 for the exact waypoint array. `getNextEvent()` cycles through waypoints and sample images, weighted ~40% disease / 60% healthy.
-2. **API routes:**
-   - `POST /api/drone/trigger` — pulls the next `DroneEvent`, calls Track A's `diagnose()`, creates a `Ticket`, stores it, returns it
-   - `GET /api/tickets` — list all tickets
-   - `PATCH /api/tickets/:id` — update status/farmerNotes
-3. **Storage** — in-memory array or local JSON file.
-4. **Seed data** — pre-populate 5–8 tickets at startup so the map isn't empty before the first live trigger.
+1. **Real images** — pull ~15–20 PlantVillage images per crop (grape: black rot, esca, leaf blight, healthy; apple: scab, black rot, cedar apple rust, healthy) into `public/sample-images/`, replacing the 14 placeholder SVGs. Keep the existing filenames, or update the image arrays in `lib/droneSimulator/index.ts` to match.
+2. **Switch the live model on** — `lib/diagnosis/index.ts` deliberately throws on `.svg` so the placeholders never hit the API. Delete that guard once real `.jpg`/`.png` files are in.
+3. **Verify** — run `diagnose()` against each of the 8 conditions and confirm the JSON is sane. Keep the logs; "here's the model catching esca" is a strong pitch beat.
+4. **Re-record the cache** — `lib/diagnosis/cache.json` must have an entry for every image that can appear in the demo sequence. This is the Section 11 safety net; the live call still runs first.
+5. **Insights view** at `/insights` — stat cards with Plex Mono numerals plus one bar chart, counts by status / crop / condition off `GET /api/tickets`. **Don't overbuild this one.**
 
-**Definition of done:** Track B can hit these three endpoints and get exactly the shapes in `lib/types.ts`, with zero knowledge of how the simulator or AI call works internally.
+**Definition of done:** live `diagnose()` returns correct conditions for all 8 classes, every demo image has a cache entry, and insights updates after a ticket is marked complete.
 
 ---
 
 ## 11. Demo Resilience — Failure Fallbacks
 
-- **AI call fails or is slow (>3s) live:** fall back instantly to Track A's pre-cached response for that exact image (Section 8, task 3). The system genuinely calls the live model first — the cache is a safety net, not a fake result.
+- **AI call fails or is slow (>3s) live:** already handled in code — `diagnose()` races the live call against a 3s timeout and falls back to Lane Z's pre-cached response for that exact image (Section 10, task 4). The system genuinely calls the live model first — the cache is a safety net, not a fake result.
 - **Venue wifi drops:** demo from `localhost`, not the Vercel URL. Deployed URL is the backup for judges to explore afterward, not the primary vehicle. Keep a static screenshot of the map view as an absolute last resort if the laptop itself has issues.
 - **Map tiles won't load:** have one cached/offline tile set or a static map image ready as a fallback background.
 - **Live demo dies completely:** 2–3 screenshots of the full working flow, saved to the pitch deck, so total technical failure doesn't kill the narrative.
@@ -251,13 +301,14 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 
 ## 12. Integration Timeline
 
-| Checkpoint    | What happens                                                                          |
-| ------------- | ------------------------------------------------------------------------------------- |
-| Now           | All three confirm `types.ts`, no debate after this point                              |
-| Early         | Build independently against the contract, mock data where needed                      |
-| Mid           | First integration check — wire real endpoints together, fix mismatches                |
-| Late          | Feature complete, seed data in, insights working, cached fallbacks in place           |
-| Final stretch | Rehearse the demo click-path 2–3 times, not more — polish stops paying off after that |
+| Checkpoint    | What happens                                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Now           | Everyone clones, `npm install`, reads `lib/types.ts`, claims a lane. No debate after this point                  |
+| +15 min       | Vercel connected. Everyone has pushed at least one commit, so we know push access works                          |
+| Early         | Lanes run independently — X against the seeded tickets, Y standalone at `/todo`, Z against real images           |
+| Mid           | First integration check — Lane X wires in Lane Y's `TicketPanel`, replacing the stub                             |
+| Late          | Feature complete: full click-path works, real images in, cache re-recorded, insights live                        |
+| Final stretch | Rehearse the demo click-path 2–3 times, not more — polish stops paying off after that                            |
 
 ---
 

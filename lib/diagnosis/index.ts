@@ -1,6 +1,6 @@
-// TRACK A — AI diagnosis layer.
+// AI diagnosis layer — built. Lane Z tunes the images and cache.
 // Public surface is one function: diagnose(imageUrl, cropType) => Promise<Diagnosis>
-// Track C imports this and nothing else from here.
+// Lanes X, Y and the API import this and nothing else from here.
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { CropType, Diagnosis } from "@/lib/types";
 import treatments from "@/lib/treatments.json";
 // Pre-computed results for every demo image (Spec Section 8 task 3 / Section 11).
-// Track A: refresh this after swapping in real PlantVillage images.
+// Lane Z: refresh this after swapping in real PlantVillage images.
 import cache from "./cache.json";
 
 const MODEL = "claude-sonnet-5";
@@ -69,7 +69,7 @@ async function callModel(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
   // The shipped sample images are SVG placeholders; the API only takes raster
-  // formats. Track A: drop real PlantVillage .jpg files in and this goes live.
+  // formats. Lane Z: drop real PlantVillage .jpg files in and this goes live.
   if (imageUrl.endsWith(".svg")) {
     throw new Error("placeholder SVG — swap in real PlantVillage images");
   }
