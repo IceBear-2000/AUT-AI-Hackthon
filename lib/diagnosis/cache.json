@@ -1,0 +1,72 @@
+{
+  "/sample-images/grape-black-rot-01.svg": {
+    "condition": "Grape Black Rot",
+    "confidence": 0.93,
+    "suggestedTreatment": "Remove and destroy mummified berries, improve canopy airflow via leaf pulling, protectant fungicide during wet spring growth"
+  },
+  "/sample-images/grape-black-rot-02.svg": {
+    "condition": "Grape Black Rot",
+    "confidence": 0.89,
+    "suggestedTreatment": "Remove and destroy mummified berries, improve canopy airflow via leaf pulling, protectant fungicide during wet spring growth"
+  },
+  "/sample-images/grape-esca-01.svg": {
+    "condition": "Grape Esca (Black Measles)",
+    "confidence": 0.81,
+    "suggestedTreatment": "No curative spray — preventive only: avoid pruning in wet weather, protect large cuts, remove severely affected vines"
+  },
+  "/sample-images/grape-leaf-blight-01.svg": {
+    "condition": "Grape Leaf Blight (Isariopsis Leaf Spot)",
+    "confidence": 0.86,
+    "suggestedTreatment": "Sanitation (remove fallen leaves), improve airflow, protectant fungicide in humid periods"
+  },
+  "/sample-images/grape-healthy-01.svg": {
+    "condition": "Healthy",
+    "confidence": 0.97,
+    "suggestedTreatment": "No action — log for insights baseline"
+  },
+  "/sample-images/grape-healthy-02.svg": {
+    "condition": "Healthy",
+    "confidence": 0.95,
+    "suggestedTreatment": "No action — log for insights baseline"
+  },
+  "/sample-images/grape-healthy-03.svg": {
+    "condition": "Healthy",
+    "confidence": 0.96,
+    "suggestedTreatment": "No action — log for insights baseline"
+  },
+  "/sample-images/apple-scab-01.svg": {
+    "condition": "Apple Scab",
+    "confidence": 0.9,
+    "suggestedTreatment": "Rake and destroy fallen leaves, protectant fungicide from green tip through early summer, resistant cultivars long-term"
+  },
+  "/sample-images/apple-scab-02.svg": {
+    "condition": "Apple Scab",
+    "confidence": 0.87,
+    "suggestedTreatment": "Rake and destroy fallen leaves, protectant fungicide from green tip through early summer, resistant cultivars long-term"
+  },
+  "/sample-images/apple-black-rot-01.svg": {
+    "condition": "Apple Black Rot (Frogeye Leaf Spot)",
+    "confidence": 0.84,
+    "suggestedTreatment": "Prune out cankers and dead wood, remove mummified fruit, protectant fungicide"
+  },
+  "/sample-images/apple-cedar-rust-01.svg": {
+    "condition": "Apple Cedar Apple Rust",
+    "confidence": 0.92,
+    "suggestedTreatment": "Remove nearby host junipers if feasible, protectant fungicide in spring, resistant cultivars long-term"
+  },
+  "/sample-images/apple-healthy-01.svg": {
+    "condition": "Healthy",
+    "confidence": 0.96,
+    "suggestedTreatment": "No action — log for insights baseline"
+  },
+  "/sample-images/apple-healthy-02.svg": {
+    "condition": "Healthy",
+    "confidence": 0.94,
+    "suggestedTreatment": "No action — log for insights baseline"
+  },
+  "/sample-images/apple-healthy-03.svg": {
+    "condition": "Healthy",
+    "confidence": 0.97,
+    "suggestedTreatment": "No action — log for insights baseline"
+  }
+}

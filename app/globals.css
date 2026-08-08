@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* Design system — PROJECT_SPEC.md Section 7.
+   Palette comes from the vineyard itself: canopy, soil, ripening fruit. */
+@theme {
+  --color-mist-50: #edf0ea;
+  --color-mist-100: #e2e7dd;
+  --color-canopy-900: #1c2e22;
+  --color-canopy-700: #2d4f36;
+  --color-canopy-600: #3f6b48;
+  --color-soil-500: #8c5a34;
+  --color-veraison-500: #d98e3b;
+  --color-alert-600: #a6402f;
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background: var(--color-mist-50);
+  color: var(--color-canopy-900);
+}
+
+/* Signature moment (Section 7): one concentric ring on the newest pin. */
+@keyframes scan-ping {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+.pin-ping {
+  animation: scan-ping 1.6s cubic-bezier(0.16, 1, 0.3, 1) 2;
+}
+
+/* Leaflet's own chrome, retuned to the palette. */
+.leaflet-container {
+  background: var(--color-mist-100);
+  font-family: var(--font-mono);
+}
+
+.leaflet-control-attribution {
+  background: rgba(237, 240, 234, 0.85) !important;
+  font-size: 10px !important;
+  color: var(--color-canopy-900) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--color-mist-50) !important;
+  color: var(--color-canopy-900) !important;
+  border-color: rgba(28, 46, 34, 0.15) !important;
+}

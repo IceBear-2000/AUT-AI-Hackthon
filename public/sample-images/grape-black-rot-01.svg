@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320">
+  <rect width="320" height="320" fill="#1C2E22"/>
+  <ellipse cx="160" cy="150" rx="130" ry="118" fill="#4B6B3A"/>
+  <ellipse cx="160" cy="150" rx="130" ry="118" fill="url(#g0)"/>
+  <defs><radialGradient id="g0"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.28"/></radialGradient></defs>
+  <line x1="160" y1="150" x2="217.5" y2="63.4" stroke="#2F4A26" stroke-width="2" opacity="0.4"/><line x1="160" y1="150" x2="253.0" y2="91.2" stroke="#2F4A26" stroke-width="2" opacity="0.4"/><line x1="160" y1="150" x2="272.5" y2="129.2" stroke="#2F4A26" stroke-width="2" opacity="0.4"/><line x1="160" y1="150" x2="272.5" y2="170.8" stroke="#2F4A26" stroke-width="2" opacity="0.4"/><line x1="160" y1="150" x2="253.0" y2="208.8" stroke="#2F4A26" stroke-width="2" opacity="0.4"/><line x1="160" y1="150" x2="217.5" y2="236.6" stroke="#2F4A26" stroke-width="2" opacity="0.4"/>
+  
+  <circle cx="131.0" cy="97.5" r="8.3" fill="#6B3524" opacity="0.85"/><circle cx="131.0" cy="97.5" r="3.7" fill="#2B1610" opacity="0.9"/>
+  <circle cx="212.0" cy="146.0" r="8.8" fill="#6B3524" opacity="0.85"/><circle cx="212.0" cy="146.0" r="4.0" fill="#2B1610" opacity="0.9"/>
+  <circle cx="186.8" cy="136.2" r="5.0" fill="#6B3524" opacity="0.85"/><circle cx="186.8" cy="136.2" r="2.2" fill="#2B1610" opacity="0.9"/>
+  <circle cx="212.4" cy="132.1" r="6.8" fill="#6B3524" opacity="0.85"/><circle cx="212.4" cy="132.1" r="3.1" fill="#2B1610" opacity="0.9"/>
+  <circle cx="100.6" cy="92.7" r="5.8" fill="#6B3524" opacity="0.85"/><circle cx="100.6" cy="92.7" r="2.6" fill="#2B1610" opacity="0.9"/>
+  <circle cx="95.2" cy="142.6" r="6.2" fill="#6B3524" opacity="0.85"/><circle cx="95.2" cy="142.6" r="2.8" fill="#2B1610" opacity="0.9"/>
+  <circle cx="67.1" cy="113.8" r="8.7" fill="#6B3524" opacity="0.85"/><circle cx="67.1" cy="113.8" r="3.9" fill="#2B1610" opacity="0.9"/>
+  <circle cx="74.5" cy="108.1" r="4.3" fill="#6B3524" opacity="0.85"/><circle cx="74.5" cy="108.1" r="2.0" fill="#2B1610" opacity="0.9"/>
+  <circle cx="121.0" cy="198.6" r="9.1" fill="#6B3524" opacity="0.85"/><circle cx="121.0" cy="198.6" r="4.1" fill="#2B1610" opacity="0.9"/>
+  <circle cx="202.7" cy="118.6" r="4.1" fill="#6B3524" opacity="0.85"/><circle cx="202.7" cy="118.6" r="1.9" fill="#2B1610" opacity="0.9"/>
+  <circle cx="143.3" cy="191.2" r="6.1" fill="#6B3524" opacity="0.85"/><circle cx="143.3" cy="191.2" r="2.7" fill="#2B1610" opacity="0.9"/>
+  <circle cx="201.8" cy="110.1" r="10.4" fill="#6B3524" opacity="0.85"/><circle cx="201.8" cy="110.1" r="4.7" fill="#2B1610" opacity="0.9"/>
+  <circle cx="161.4" cy="161.3" r="7.7" fill="#6B3524" opacity="0.85"/><circle cx="161.4" cy="161.3" r="3.5" fill="#2B1610" opacity="0.9"/>
+  <circle cx="204.1" cy="148.6" r="7.2" fill="#6B3524" opacity="0.85"/><circle cx="204.1" cy="148.6" r="3.3" fill="#2B1610" opacity="0.9"/>
+  <rect x="0" y="288" width="320" height="32" fill="#1C2E22" opacity="0.92"/>
+  <text x="12" y="309" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#EDF0EA" letter-spacing="1.4">GRAPE / BLACK ROT</text>
+  <text x="308" y="309" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" fill="#8C5A34">PLACEHOLDER</text>
+</svg>

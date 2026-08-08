@@ -1,0 +1,46 @@
+{
+  "grape": {
+    "Black Rot": {
+      "symptoms": "Reddish-brown circular leaf spots with dark margins; berries shrivel into black \"mummies\"",
+      "response": "Remove and destroy mummified berries, improve canopy airflow via leaf pulling, protectant fungicide during wet spring growth",
+      "severity": "high"
+    },
+    "Esca (Black Measles)": {
+      "symptoms": "Interveinal \"tiger-stripe\" leaf streaking, dark berry spotting, occasional sudden vine collapse",
+      "response": "No curative spray — preventive only: avoid pruning in wet weather, protect large cuts, remove severely affected vines",
+      "severity": "high"
+    },
+    "Leaf Blight (Isariopsis Leaf Spot)": {
+      "symptoms": "Angular brown necrotic lesions, early defoliation",
+      "response": "Sanitation (remove fallen leaves), improve airflow, protectant fungicide in humid periods",
+      "severity": "medium"
+    },
+    "Healthy": {
+      "symptoms": "No visible symptoms",
+      "response": "No action — log for insights baseline",
+      "severity": "none"
+    }
+  },
+  "apple": {
+    "Apple Scab": {
+      "symptoms": "Olive-green to black velvety spots on leaves/fruit, fruit russeting",
+      "response": "Rake and destroy fallen leaves, protectant fungicide from green tip through early summer, resistant cultivars long-term",
+      "severity": "high"
+    },
+    "Black Rot (Frogeye Leaf Spot)": {
+      "symptoms": "Purple-bordered \"frogeye\" leaf spots, fruit rot with concentric rings, branch cankers",
+      "response": "Prune out cankers and dead wood, remove mummified fruit, protectant fungicide",
+      "severity": "high"
+    },
+    "Cedar Apple Rust": {
+      "symptoms": "Bright orange-yellow leaf spots (needs a nearby juniper/cedar host)",
+      "response": "Remove nearby host junipers if feasible, protectant fungicide in spring, resistant cultivars long-term",
+      "severity": "medium"
+    },
+    "Healthy": {
+      "symptoms": "No visible symptoms",
+      "response": "No action — log for insights baseline",
+      "severity": "none"
+    }
+  }
+}
