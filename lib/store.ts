@@ -5,13 +5,13 @@ import type { Diagnosis, DroneEvent, Ticket, TicketStatus } from "@/lib/types";
 
 type Store = { tickets: Ticket[]; seeded: boolean };
 
-const globalStore = globalThis as unknown as { __farmsentry?: Store };
+const globalStore = globalThis as unknown as { __cropiq?: Store };
 
 function store(): Store {
-  if (!globalStore.__farmsentry) {
-    globalStore.__farmsentry = { tickets: [], seeded: false };
+  if (!globalStore.__cropiq) {
+    globalStore.__cropiq = { tickets: [], seeded: false };
   }
-  return globalStore.__farmsentry;
+  return globalStore.__cropiq;
 }
 
 /** Disease tickets go to the farmer; healthy ones need no owner. */

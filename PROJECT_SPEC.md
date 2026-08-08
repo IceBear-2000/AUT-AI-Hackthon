@@ -1,4 +1,4 @@
-# FarmSentry — Project Specification
+# CropIQ — Project Specification
 
 _(working title — rename freely)_
 
@@ -221,7 +221,7 @@ Grounded in the actual subject — a vineyard survey instrument, not a generic S
 
 **Layout**
 
-- Top bar: small wordmark styled like a system readout, e.g. `FARMSENTRY // RENWICK-01` in Plex Mono, plus live pill counts for new/approved/completed
+- Top bar: small wordmark styled like a system readout, e.g. `CROPIQ // RENWICK-01` in Plex Mono, plus live pill counts for new/approved/completed
 - Main view: full-bleed map, pins colored by status (`veraison` = new, `canopy` = approved/completed, `alert` = flagged urgent). Persistent "Trigger Scan" button, bottom-right, styled like a physical instrument button, not a generic rounded CTA
 - Ticket detail: a **side panel that slides in from the right**, not a modal — keep the map visible behind it so the pin and its ticket stay spatially connected. This is a small, deliberate choice: most CRUD hackathon apps default to a blocking modal, and it costs nothing extra to do the panel instead
 - Insights: a row of stat cards using Plex Mono numerals (data-first, "readout" feel) plus one bar chart in the canopy/veraison palette
