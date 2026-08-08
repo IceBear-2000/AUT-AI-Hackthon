@@ -28,6 +28,8 @@ type TicketStore = {
   applyUpdate: (ticket: Ticket) => void;
   /** Append a ticket the drone just produced. */
   addTicket: (ticket: Ticket) => void;
+  /** Empty the farm server-side and locally, for a clean demo run. */
+  resetDemo: () => Promise<void>;
 };
 
 const TicketsContext = createContext<TicketStore | null>(null);
@@ -99,13 +101,39 @@ export function TicketsProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  // Upsert, not append. A sweep runs for several seconds, and a focus or route
+  // refetch during it returns a list that already contains the findings added so
+  // far — appending them a second time gave duplicate React keys and double pins.
   const addTicket = useCallback((ticket: Ticket) => {
-    setTickets((previous) => [...previous, ticket]);
+    setTickets((previous) => {
+      const at = previous.findIndex((existing) => existing.id === ticket.id);
+      if (at === -1) return [...previous, ticket];
+      const next = [...previous];
+      next[at] = ticket;
+      return next;
+    });
+  }, []);
+
+  const resetDemo = useCallback(async () => {
+    const response = await fetch("/api/demo/reset", { method: "POST" });
+    if (!response.ok) throw new Error("reset failed");
+    // Clear locally too rather than refetching — the operator should see the
+    // farm empty the instant they press it, with no round trip to wait on.
+    setTickets([]);
+    setError(null);
   }, []);
 
   const value = useMemo(
-    () => ({ tickets, loading, error, reload: load, applyUpdate, addTicket }),
-    [tickets, loading, error, load, applyUpdate, addTicket],
+    () => ({
+      tickets,
+      loading,
+      error,
+      reload: load,
+      applyUpdate,
+      addTicket,
+      resetDemo,
+    }),
+    [tickets, loading, error, load, applyUpdate, addTicket, resetDemo],
   );
 
   return (

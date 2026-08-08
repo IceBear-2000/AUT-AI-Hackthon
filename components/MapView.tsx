@@ -40,9 +40,11 @@ function pinIcon(color: string, selected: boolean, ping: boolean): L.DivIcon {
 // block rather than sitting on top of the pin it just created.
 const droneIcon = L.divIcon({
   className: "drone-marker",
-  html: `<span class="drone-body"></span><span class="drone-sweep"></span><span class="drone-tether"></span>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 52],
+  html:
+    `<img class="drone-craft" src="/drone.svg" alt="" draggable="false" />` +
+    `<span class="drone-sweep"></span><span class="drone-tether"></span>`,
+  iconSize: [44, 44],
+  iconAnchor: [22, 62],
 });
 
 /**

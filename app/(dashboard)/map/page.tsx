@@ -47,11 +47,12 @@ const LEGEND = [
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function MapPage() {
-  const { tickets, applyUpdate, addTicket } = useTicketStore();
+  const { tickets, applyUpdate, addTicket, resetDemo } = useTicketStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pingTicketId, setPingTicketId] = useState<string | null>(null);
   const [droneWaypointIndex, setDroneWaypointIndex] = useState(0);
   const [scanning, setScanning] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,6 +114,24 @@ export default function MapPage() {
     }
   }, [addTicket]);
 
+  // Operator control, deliberately understated: empties the farm so the next
+  // sweep fills it from nothing and the drone visibly does the work.
+  const clearFarm = useCallback(async () => {
+    setResetting(true);
+    setError(null);
+    try {
+      await resetDemo();
+      setSelectedId(null);
+      setPingTicketId(null);
+      setDroneWaypointIndex(0);
+      setProgress(0);
+    } catch {
+      setError("Reset failed — check the server logs.");
+    } finally {
+      setResetting(false);
+    }
+  }, [resetDemo]);
+
   return (
     <div className="absolute inset-0">
       <MapView
@@ -141,6 +160,30 @@ export default function MapPage() {
           ))}
         </ul>
       </div>
+
+      {/* Demo reset. Small and quiet — it's a stage control, not a product
+          feature, and it must never read as something a farmer would press. */}
+      <button
+        type="button"
+        onClick={clearFarm}
+        disabled={resetting || scanning}
+        title="Clear every finding — demo control"
+        className="glass absolute right-4 top-4 z-[1000] flex items-center gap-1.5 rounded-pill px-3 py-2 font-mono text-[10px] tracking-[0.14em] text-tertiary transition-colors hover:text-primary disabled:pointer-events-none disabled:opacity-35"
+      >
+        <svg
+          viewBox="0 0 16 16"
+          className="size-3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16" />
+          <path d="M13.2 1.6v2.9h-2.9" />
+        </svg>
+        {resetting ? "CLEARING" : "RESET"}
+      </button>
 
       {error && (
         <p

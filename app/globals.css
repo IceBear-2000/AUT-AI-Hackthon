@@ -363,12 +363,23 @@ body {
   transition: transform 640ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.drone-body {
+/* The airframe itself. Bobs gently so a parked drone still reads as airborne. */
+.drone-craft {
   position: absolute;
-  inset: 10px;
-  border-radius: 3px;
-  background: var(--text-primary);
-  box-shadow: 0 0 0 2px var(--canvas);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: drone-hover 3.2s ease-in-out infinite;
+}
+
+@keyframes drone-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
 }
 
 .drone-tether {
@@ -382,10 +393,12 @@ body {
 
 .drone-sweep {
   position: absolute;
-  inset: 0;
+  /* Sits outside the rotor arc so the dashed ring reads as a scan radius
+     rather than crowding the airframe. */
+  inset: -7px;
   border-radius: 9999px;
   border: 1.5px dashed var(--accent);
-  opacity: 0.7;
+  opacity: 0.55;
   animation: drone-spin 6s linear infinite;
 }
 

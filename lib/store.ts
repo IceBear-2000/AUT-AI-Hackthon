@@ -66,3 +66,16 @@ export function hasSeeded(): boolean {
 export function markSeeded(): void {
   store().seeded = true;
 }
+
+/**
+ * Wipe every ticket and leave the store deliberately empty.
+ *
+ * Stays flagged as seeded on purpose: the point of a reset is a blank farm the
+ * operator can fill live with a sweep, so the demo seeds must not creep back in
+ * on the next GET.
+ */
+export function clearTickets(): void {
+  const current = store();
+  current.tickets = [];
+  current.seeded = true;
+}
